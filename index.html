@@ -3,107 +3,1480 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caja de Herramientas Privada</title>
+    <title>Auditoría Interna Moncobra</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #0f172a; font-family: sans-serif; }
-        #app-frame { border: none; width: 100%; height: 100%; display: none; background: white; }
-        .loader-big { border: 4px solid #f1f5f9; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-</head>
-<body class="flex items-center justify-center">
-
-    <div id="login-screen" class="w-full max-w-sm p-10 bg-white rounded-[2.5rem] shadow-2xl text-center mx-4">
-        <div class="mb-8">
-            <div class="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-5">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </div>
-            <h2 class="text-3xl font-black text-slate-800 tracking-tight">Acceso Seguro</h2>
-            <p class="text-slate-400 text-sm mt-2">Introduce la contraseña del programa</p>
-        </div>
-
-        <div id="form-container">
-            <input type="password" id="entry-pass" autofocus
-                class="w-full px-6 py-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none text-center text-2xl font-bold transition-all mb-5 shadow-inner"
-                placeholder="••••••••">
-
-            <button onclick="checkAccess()" id="entry-btn"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl transition-all active:scale-95 shadow-xl shadow-blue-100 uppercase tracking-widest">
-                Entrar
-            </button>
-        </div>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        <div id="loading-state" class="hidden">
-            <div class="loader-big"></div>
-            <p class="text-blue-600 font-bold animate-pulse">DESCOMPRIMIENDO DATOS...</p>
+        .time-cell-wrapper { display: flex; align-items: center; gap: 8px; position: relative; width: 100%; }
+        .btn-clear-time { color: #cbd5e1; cursor: pointer; transition: all 0.2s; font-size: 14px; flex-shrink: 0; padding: 2px; }
+        .btn-clear-time:hover { color: #ef4444; transform: scale(1.1); }
+        input[type="time"] { min-width: 95px; flex-grow: 1; }
+    </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <nav class="bg-indigo-700 text-white shadow-md z-10 shrink-0">
+        <div class="max-w-[1500px] mx-auto px-4">
+            <div class="flex flex-col lg:flex-row justify-between items-center py-4 gap-4">
+                <div class="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
+                    <div class="flex items-center gap-2 font-bold text-lg tracking-wide">
+                        <i class="fas fa-stopwatch text-indigo-300"></i> Auditoría Moncobra
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-2 w-full md:w-auto">
+                        <button onclick="switchTab('auditTab')" id="btn-auditTab" class="nav-btn bg-indigo-800 px-4 py-2 rounded-md text-sm font-medium transition flex items-center shadow-inner gap-2">
+                            <i class="fas fa-clipboard-list"></i> Nueva Auditoría
+                        </button>
+                        <button onclick="switchTab('dataTab')" id="btn-dataTab" class="nav-btn hover:bg-indigo-600 px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2">
+                            <i class="fas fa-chart-line"></i> Resumen Global
+                        </button>
+                        <button onclick="switchTab('configTab')" id="btn-configTab" class="nav-btn hover:bg-indigo-600 px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2">
+                            <i class="fas fa-cog"></i> Configuración
+                        </button>
+                    </div>
+                </div>
+                <div class="flex flex-wrap justify-center gap-2 w-full lg:w-auto">
+                    <button onclick="copiarLaTeX()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2 mr-2 shadow-sm" title="Genera Informe LaTeX del filtro actual"><i class="fas fa-file-code"></i> LaTeX</button>
+                    <button onclick="exportarJSON()" class="bg-indigo-500 hover:bg-indigo-400 text-white px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2"><i class="fas fa-download"></i> Exportar</button>
+                    <label class="bg-teal-600 hover:bg-teal-500 text-white px-3 py-1.5 rounded text-sm font-medium transition cursor-pointer flex items-center gap-2 shadow-sm">
+                        <i class="fas fa-upload"></i> Importar
+                        <input type="file" id="importFile" accept=".json" class="hidden" onchange="importarJSON(event)">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50 relative" id="main-content">
+        
+        <div id="auditTab" class="tab-content max-w-[1450px] mx-auto fade-in pb-20 overflow-y-auto">
+            <div class="w-full mb-6 bg-white p-4 sm:p-8 rounded-xl shadow-sm border border-slate-200 flex justify-center items-center overflow-hidden"><img src="https://arepla.com/wp-content/uploads/2022/05/logos-moncobra.jpg" class="w-full max-w-5xl object-contain max-h-32 sm:max-h-[220px]" alt="Logo Moncobra"></div>
+            <form id="auditForm" onsubmit="guardarAuditoria(event)" class="space-y-6">
+                
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-100 border-b px-5 py-3 flex items-center justify-between">
+                        <h2 class="text-lg font-bold text-slate-800"><i class="fas fa-info-circle text-indigo-500 mr-2"></i> Datos de Cabecera</h2>
+                        <div id="edit-badge" class="hidden bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs border border-amber-200 flex items-center gap-1 font-bold"><i class="fas fa-edit"></i> EDITANDO</div>
+                    </div>
+                    <div class="p-5 grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">FECHA</label><input type="date" id="fecha" onchange="actualizarDia()"  required class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">DÍA</label><input type="text" id="diaSemana" readonly class="w-full border rounded p-2 text-sm bg-slate-50 text-slate-500 outline-none font-semibold"></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">AUDITOR</label><input type="text" id="auditor" required placeholder="Nombre..." class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">SITE / UBICACIÓN</label><select id="site" required class="w-full border rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"></select></div>
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">SUPERVISOR</label><input type="text" id="supervisor" required placeholder="Nombre..." class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">EJECUTANTES</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="nuevoEjecutante" placeholder="Nombre..." class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" onkeypress="if(event.key==='Enter'){event.preventDefault(); agregarEjecutante();}">
+                                <button type="button" onclick="agregarEjecutante()" class="bg-slate-200 hover:bg-slate-300 px-3 rounded transition"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                        <div class="md:col-span-4 flex flex-wrap gap-2 mt-2" id="lista-ejecutantes"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-100 border-b px-5 py-3 font-bold text-slate-800">Distribución de Jornada Global</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm min-w-[900px]">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] font-bold border-b">
+                                    <th class="p-3 w-1/4">Fase / Tarea</th>
+                                    <th class="p-3 w-48 text-center">Intervalo Horario</th>
+                                    <th class="p-3 text-center w-24">Real</th>
+                                    
+                                    <th class="p-3 text-center w-24">Desviación</th>
+                                    <th class="p-3">Observaciones / Incidencias</th>
+                                </tr>
+                            </thead>
+                            <tbody id="initial-tasks-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="permits-container" class="space-y-6"></div>
+
+                <div class="flex justify-center my-4">
+                    <button type="button" onclick="agregarPermiso()" class="border-2 border-dashed border-indigo-300 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-500 rounded-xl px-6 py-4 font-semibold transition w-full md:w-2/3 flex items-center justify-center gap-2">
+                        <i class="fas fa-plus-circle text-xl"></i> Añadir Nuevo Permiso / Operación
+                    </button>
+                </div>
+
+                
+
+                
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-100 border-b px-5 py-3 font-bold text-slate-800">Cierre Técnico (Fin de Jornada)</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm min-w-[900px]">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] font-bold border-b">
+                                    <th class="p-3 w-1/4">Fase / Tarea</th>
+                                    <th class="p-3 w-48 text-center">Intervalo Horario</th>
+                                    <th class="p-3 text-center w-24">Real</th>
+                                    
+                                    <th class="p-3 text-center w-24">Desviación</th>
+                                    <th class="p-3">Observaciones / Incidencias</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cierre-tasks-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="pt-6 flex justify-end gap-3">
+                    <button type="button" id="btn-cancel-edit" onclick="resetForms()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-3 rounded-lg font-bold transition">Cancelar Edición</button>
+                    <button type="submit" id="btn-submit-audit" class="bg-green-600 hover:bg-green-500 text-white px-10 py-3 rounded-lg font-bold text-lg shadow-md transition transform hover:scale-105 flex items-center gap-2">
+                        <i class="fas fa-save"></i> <span id="submit-text">Guardar Auditoría Diaria</span>
+                    </button>
+                </div>
+            </form>
         </div>
 
-        <p id="error-msg" class="text-rose-500 text-xs font-bold mt-6 opacity-0 transition-opacity">CONTRASEÑA INCORRECTA</p>
-    </div>
+        <div id="dataTab" class="tab-content hidden h-full flex flex-col overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+                <div class="bg-slate-100 border-b px-5 py-3 flex justify-between items-center shrink-0">
+                    <div class="flex items-center gap-6">
+                        <h2 class="text-xl font-bold text-slate-800">Base de Datos</h2>
+                        
+                        <div id="prod-summary" class="flex gap-4 text-[11px] font-bold"></div>
+                        <button onclick="mostrarTendenciasGlobales()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2 shadow-sm ml-4">
+                            <i class="fas fa-chart-area"></i> Ver Tendencias Globales
+                        </button>
+                    </div>
+                    <span class="text-xs text-slate-500 font-bold">Total: <span id="total-registros">0</span></span>
+                </div>
+                <div class="p-3 bg-white border-b shrink-0 flex gap-4">
+                    <input type="text" id="searchData" placeholder="Filtrar por Site o Supervisor..." class="border rounded p-2 text-xs w-80 outline-none" onkeyup="renderDataTable()">
+                </div>
+                <div class="flex-1 overflow-auto">
+                    <table class="w-full text-left text-[10px] whitespace-nowrap">
+                        <thead class="sticky top-0 bg-slate-50 shadow-sm z-10 font-bold uppercase text-slate-500 border-b">
+                            <tr>
+                                <th class="p-2">Fecha</th><th class="p-2">Supervisor</th><th class="p-2">Site</th><th class="p-2">Ejecutantes</th><th class="p-2 min-w-[120px]">Permisos</th>
+                                <th class="p-2 text-center bg-slate-100">Dist.</th>
+                                <th class="p-2 text-center bg-indigo-50">Charla</th><th class="p-2 text-center bg-indigo-50">F.Aut</th><th class="p-2 text-center bg-indigo-50">F.EC</th><th class="p-2 text-center bg-indigo-50">F.SE</th><th class="p-2 text-center bg-indigo-50">F.Comp</th>
+                                <th class="p-2 text-center font-bold text-indigo-700 bg-indigo-100">T.Ejec. (+8h)</th>
+                                <th class="p-2 text-center bg-indigo-50">Cierre</th>
+                                <th class="p-2 text-center bg-slate-100 font-bold text-slate-600 border-x">Fin Jor.</th>
+                                <th class="p-2 text-center bg-slate-100">Despl.</th><th class="p-2 text-center bg-slate-100">Desay.</th><th class="p-2 text-center bg-slate-100">Desc.</th><th class="p-2 text-center bg-slate-100">Mat.</th><th class="p-2 text-center bg-slate-100">Esp.</th>
+                                <th class="p-2 text-center font-bold bg-slate-200 text-indigo-900">Total</th><th class="p-2 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-    <iframe id="app-frame"></iframe>
+        <div id="configTab" class="tab-content hidden max-w-4xl mx-auto pb-10 overflow-y-auto">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-100 border-b px-5 py-4"><h2 class="text-xl font-bold text-slate-800"><i class="fas fa-cogs text-indigo-500 mr-2"></i> Configuración</h2></div>
+                <div class="p-6 space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="config-tiempos-container"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">SITIOS</label><textarea id="conf-sites" class="w-full border rounded p-2 text-sm h-24 outline-none focus:ring-2 focus:ring-indigo-500"></textarea></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">TIPOS PERMISO</label><textarea id="conf-tipos" class="w-full border rounded p-2 text-sm h-24 outline-none focus:ring-2 focus:ring-indigo-500"></textarea></div>
+                    </div>
+                    <div class="pt-4 border-t flex justify-end"><button onclick="aplicarConfiguracionManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded font-bold transition shadow-md">Aplicar Cambios</button></div>
+                </div>
+            </div>
+        </div>
+    
+                <div id="chart-modal" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-5xl flex flex-col max-h-[90vh] overflow-y-auto fade-in relative">
+                        <button onclick="const m=document.getElementById('chart-modal'); m.classList.add('hidden'); m.classList.remove('flex');" class="absolute top-4 right-6 text-gray-400 hover:text-red-500 text-4xl font-bold transition">&times;</button>
+                        <h3 class="text-2xl font-bold text-indigo-900 mb-6"><i class="fas fa-chart-pie mr-2 text-indigo-500"></i> Análisis Extenso de Auditoría</h3>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col items-center">
+                                <canvas id="chart-tiempos" width="400" height="300"></canvas>
+                            </div>
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col items-center">
+                                <canvas id="chart-incidencias" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+    
+                <!-- MODAL TENDENCIAS GLOBALES INYECTADO -->
+                <div id="global-chart-modal" class="fixed inset-0 bg-slate-900/95 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-7xl flex flex-col max-h-[95vh] overflow-y-auto fade-in relative">
+                        <button onclick="const m=document.getElementById('global-chart-modal'); m.classList.add('hidden'); m.classList.remove('flex');" class="absolute top-4 right-6 text-gray-400 hover:text-red-500 text-4xl font-bold transition">&times;</button>
+                        <h3 class="text-2xl font-bold text-indigo-900 mb-4"><i class="fas fa-chart-line mr-2 text-indigo-500"></i> Tendencias Globales</h3>
+                        
+                        <!-- Panel de Filtros -->
+                        <div class="flex flex-wrap gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 w-full items-end shadow-sm">
+                            <div class="flex flex-col gap-1 w-full sm:w-auto">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Especialidad</label>
+                                <select id="filter-global-esp" onchange="updateGlobalCharts()" class="border rounded px-3 py-2 text-xs bg-white outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 min-w-[150px]">
+                                    <option value="all">Todas</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1 w-full sm:w-auto">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Día (Dist. Jornada)</label>
+                                <select id="filter-global-dia" onchange="updateGlobalCharts()" class="border rounded px-3 py-2 text-xs bg-white outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 min-w-[150px]">
+                                    <option value="all">Todos los días</option>
+                                    <option value="Lunes">Lunes</option>
+                                    <option value="Martes">Martes</option>
+                                    <option value="Miércoles">Miércoles</option>
+                                    <option value="Jueves">Jueves</option>
+                                    <option value="Viernes">Viernes</option>
+                                    <option value="Sábado">Sábado</option>
+                                    <option value="Domingo">Domingo</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1 w-full sm:w-auto">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha Inicio</label>
+                                <input type="date" id="filter-global-ini" onchange="updateGlobalCharts()" class="border rounded px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700">
+                            </div>
+                            <div class="flex flex-col gap-1 w-full sm:w-auto">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha Fin</label>
+                                <input type="date" id="filter-global-fin" onchange="updateGlobalCharts()" class="border rounded px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700">
+                            </div>
+                            <div class="ml-auto w-full sm:w-auto flex justify-end">
+                                <button onclick="limpiarFiltrosGlobales()" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
+                                    <i class="fas fa-eraser"></i> Limpiar Filtros
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-8 flex-1">
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col items-center w-full min-h-[300px]">
+                                <canvas id="chart-tendencia-prod" width="100%" height="100%"></canvas>
+                            </div>
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col items-center w-full min-h-[350px]">
+                                <canvas id="chart-desviacion-fin" width="100%" height="100%"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </main>
 
     <script>
-        const apps = [{"p":"auditar","c":"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"}];
 
-        async function checkAccess() {
-            const passInput = document.getElementById('entry-pass').value;
-            const errorMsg = document.getElementById('error-msg');
-            const formContainer = document.getElementById('form-container');
-            const loadingState = document.getElementById('loading-state');
+        let appData = {
+            audits: [],
+            config: {
+                times: { distribucion: 30, finJornada: 10, charla: 5, firmaAut: 15, firmaEC: 10, firmaSE: 10, firmaComp: 10, cierre: 10 },
+                lists: { 
+                    sites: ["QUÍMICA", "ENERGY PARK", "EXTERIOR"], 
+                    tiposPermiso: ["FRÍO", "CALIENTE"],
+                    especialidades: ["Estática", "Dinámica", "Instrumentación", "Electricidad"],
+                    plantas: ["CBL", "FCC", "ENE", "EN2", "PQ", "RNL", "APN", "APS", "PTN", "MYM", "C2"],
+                    incidencias: ["Indisponibilidad de recursos", "Indisponibilidad de recursos auxiliares", "Gestión de materiales", "Deficiencia en la programación", "Deficiencia en la planificación", "Deficiencia en la gestión de permiso externa", "Deficiencia en la gestión de permiso interna", "Exceso de descanso", "Limitación climatológica", "Espera a 3º", "Reunión interna Moncobra", "Fin de jornada", "Desplazamiento", "Desayuno", "Exceso de charla pre-tarea", "Otros"]
+                }
+            }
+        };
+
+        let currentDraft = { ejecutantes: [], initialTasks: {}, cierreTasks: {}, permisos: [] };
+        let editingAuditId = null;
+
+        const initialTasksDef = [{ id: 'distribucion', label: 'Distribución de jornada', timeKey: 'distribucion' }];
+        const cierreTasksDef = [{ id: 'finJornada', label: 'Fin de jornada (Cierre técnico)', timeKey: 'finJornada' }];
+        const permitTasksDef = [
+            { id: 'charla', label: 'Charla pre-tarea', timeKey: 'charla' },
+            { id: 'firmaAut', label: 'Firma autorizante', timeKey: 'firmaAut' },
+            { id: 'firmaEC', label: 'Firma de seguridad (E.C)', timeKey: 'firmaEC' },
+            { id: 'firmaSE', label: 'Firma S.E. y ejecutantes', timeKey: 'firmaSE' },
+            { id: 'firmaComp', label: 'Firma comprobador', timeKey: 'firmaComp' },
+            { id: 'ejecucion', label: 'Tiempo de Ejecución', timeKey: null },
+            { id: 'cierre', label: 'Suspensión / Cierre', timeKey: 'cierre' }
+        ];
+
+        window.onload = () => { resetForms(); };
+
+        function actualizarDia() {
+            const f = document.getElementById('fecha').value;
+            if(!f) return;
+            const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+            let d = new Date(f);
+            let dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1; // Ajuste europeo
+            document.getElementById('diaSemana').value = dias[dayIndex];
+        }
+
+        function resetForms() {
+            editingAuditId = null; document.getElementById('edit-badge').classList.add('hidden'); document.getElementById('btn-cancel-edit').classList.add('hidden');
+            document.getElementById('submit-text').innerText = "Guardar Auditoría Diaria"; document.getElementById('auditForm').reset();
+            document.getElementById('fecha').valueAsDate = new Date(); actualizarDia(); aplicarListasADesplegables();
+            currentDraft = { ejecutantes: [], initialTasks: {}, cierreTasks: {}, permisos: [] };
+            initialTasksDef.forEach(t => currentDraft.initialTasks[t.id] = [getUniqueId()]);
+            cierreTasksDef.forEach(t => currentDraft.cierreTasks[t.id] = [getUniqueId()]);
+            renderEjecutantes(); renderInitialTasks(); renderCierreTasks();
+            document.getElementById('permits-container').innerHTML = ''; agregarPermiso();
+            setTimeout(recalcDistribucionInterval, 100);
+        }
+
+        function switchTab(t) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(t).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-indigo-800', 'shadow-inner'));
+            document.getElementById('btn-'+t).classList.add('bg-indigo-800', 'shadow-inner');
+            if(t === 'dataTab') renderDataTable();
+            if(t === 'configTab') renderConfigFields();
+        }
+
+        function formatTimeSpan(mins) {
+            if (mins === '-' || mins === undefined || isNaN(mins) || mins === null) return '-';
+            let abs = Math.abs(mins); let h = Math.floor(abs / 60); let m = Math.round(abs % 60);
+            return (mins < 0 ? '-' : '') + (h > 0 ? `${h}h ${m}m` : `${m}m`);
+        }
+
+        function getUniqueId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+
+        function renderInitialTasks() {
+            const container = document.getElementById('initial-tasks-body');
+            const saved = getSavedValues('#initial-tasks-body');
+            container.innerHTML = initialTasksDef.map(task => (currentDraft.initialTasks[task.id] || []).map((rowId, rIdx) => createTaskRowHTML('initial', task, rowId, rIdx === 0, 'INITIAL_SECTION')).join('')).join('');
+            restoreSavedValues(saved);
+        }
+        
+        function renderCierreTasks() {
+            const container = document.getElementById('cierre-tasks-body');
+            const saved = getSavedValues('#cierre-tasks-body');
+            container.innerHTML = cierreTasksDef.map(task => (currentDraft.cierreTasks[task.id] || []).map((rowId, rIdx) => createTaskRowHTML('cierre', task, rowId, rIdx === 0, 'CIERRE_SECTION')).join('')).join('');
+            restoreSavedValues(saved);
+        }
+
+        function renderPermits() {
+            const container = document.getElementById('permits-container');
+            const saved = getSavedValues('#permits-container');
             
-            const app = apps.find(a => a.p === passInput);
-            
-            if(app) {
-                formContainer.classList.add('hidden');
-                loadingState.classList.remove('hidden');
+            container.innerHTML = currentDraft.permisos.map((p, index) => {
+                let totalIncidenciasMins = 0;
                 
-                requestAnimationFrame(() => {
-                    setTimeout(() => {
-                        try {
-                            launchApp(app.c);
-                        } catch(e) {
-                            console.error(e);
-                            alert("Error al cargar el programa: Memoria insuficiente o archivo corrupto.");
-                            location.reload();
+                let tbodyHTML = permitTasksDef.map(task => {
+                    return p.sections[task.id].map((item, rIdx) => {
+                        if (item.type === 'row') {
+                            return createTaskRowHTML(`p_${p.id}`, task, item.id, rIdx === 0, p.id);
+                        } else if (item.type === 'incidencia') {
+                            totalIncidenciasMins += parseInt(item.real) || 0;
+                            return createIncidenciaRowHTML(p.id, task.id, item);
                         }
-                    }, 50);
+                    }).join('');
+                }).join('');
+
+                return `
+                <div class="bg-white rounded-xl shadow-sm border border-indigo-200 overflow-hidden mb-6">
+                    <div class="bg-indigo-50 border-b px-5 py-3 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex items-center gap-3 flex-wrap w-full md:w-auto">
+                            <h2 class="text-sm font-bold text-indigo-900 uppercase">Permiso #${index + 1}</h2>
+                            <input type="text" id="p_num_${p.id}" required placeholder="Nº Permiso" class="border rounded px-2 py-1 text-xs font-bold w-full sm:w-24 outline-none focus:ring-1 focus:ring-indigo-400">
+                            <select id="p_tipo_${p.id}" required class="border rounded px-2 py-1 text-xs bg-white outline-none w-full sm:w-auto">
+                                <option value="" disabled selected>Tipo...</option>
+                                ${appData.config.lists.tiposPermiso.map(t => `<option value="${t}">${t}</option>`).join('')}
+                            </select>
+                            <select id="p_planta_${p.id}" required class="border rounded px-2 py-1 text-xs bg-white outline-none w-full sm:w-auto">
+                                <option value="" disabled selected>Planta...</option>
+                                ${appData.config.lists.plantas.map(t => `<option value="${t}">${t}</option>`).join('')}
+                            </select>
+                            <select id="p_esp_${p.id}" required class="border rounded px-2 py-1 text-xs bg-white outline-none w-full sm:w-auto">
+                                <option value="" disabled selected>Especialidad...</option>
+                                ${appData.config.lists.especialidades.map(t => `<option value="${t}">${t}</option>`).join('')}
+                            </select>
+                        </div>
+                        <button type="button" onclick="eliminarPermiso('${p.id}')" class="text-red-500 hover:text-red-700 transition ml-auto"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-sm min-w-[900px]"><tbody class="divide-y divide-slate-100">
+                        ${tbodyHTML}
+                    </tbody></table></div>
+                    ${totalIncidenciasMins > 0 ? `<div class="bg-orange-50 border-t px-4 py-2 text-right text-xs font-bold text-orange-800">Total tiempo en incidencias de este permiso: ${formatTimeSpan(totalIncidenciasMins)}</div>` : ''}
+                </div>`;
+            }).join('');
+            restoreSavedValues(saved);
+        }
+
+        function createTaskRowHTML(prefix, task, rowUniqueId, isFirst, ownerId) {
+            const baseId = `${prefix}_${task.id}_${rowUniqueId}`;
+            let pTime = task.timeKey ? appData.config.times[task.timeKey] : '-';
+            let isPermit = ownerId !== 'INITIAL_SECTION' && ownerId !== 'CIERRE_SECTION';
+            let isDist = task.id === 'distribucion';
+            
+            let indIncBtn = isFirst && isPermit && task.timeKey ? `<button type="button" onclick="agregarIncidencia('${ownerId}', '${task.id}', null, null)" class="text-orange-400 hover:text-orange-600 transition px-2" title="Añadir incidencia independiente"><i class="fas fa-exclamation-circle"></i></button>` : '';
+
+            let actBtn = isDist ? '' : (isFirst ? 
+                `<div class="flex items-center gap-1"><button type="button" onclick="${ownerId === 'INITIAL_SECTION' ? `addRowInit('${task.id}')` : (ownerId === 'CIERRE_SECTION' ? `addRowCierre('${task.id}')` : `addRowPermit('${ownerId}', '${task.id}')`)}" class="text-indigo-400 hover:text-indigo-600 transition px-2" title="Añadir registro"><i class="fas fa-plus-circle"></i></button>${indIncBtn}</div>` : 
+                `<button type="button" onclick="${ownerId === 'INITIAL_SECTION' ? `delRowInit('${task.id}', '${rowUniqueId}')` : (ownerId === 'CIERRE_SECTION' ? `delRowCierre('${task.id}', '${rowUniqueId}')` : `delRowPermit('${ownerId}', '${task.id}', '${rowUniqueId}')`)}" class="text-red-300 hover:text-red-500 transition px-2" title="Eliminar registro"><i class="fas fa-minus-circle"></i></button>`);
+
+            let btnIncidencia = isPermit && task.timeKey && !isDist ? `<button type="button" id="btn_inc_${baseId}" onclick="agregarIncidencia('${ownerId}', '${task.id}', '${rowUniqueId}', '${baseId}')" class="hidden ml-2 text-[9px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-bold hover:bg-orange-200 transition shadow-sm"><i class="fas fa-exclamation-triangle"></i> Añadir Incidencia (Exceso)</button>` : '';
+
+            let timeInputs = isDist ? 
+                `<input type="time" id="${baseId}_start" readonly class="border border-indigo-200 rounded px-2 py-1 text-[11px] outline-none bg-indigo-50 text-indigo-700 font-bold cursor-not-allowed">
+                 <span class="text-slate-300 font-bold">a</span>
+                 <input type="time" id="${baseId}_end" readonly class="border border-indigo-200 rounded px-2 py-1 text-[11px] outline-none bg-indigo-50 text-indigo-700 font-bold cursor-not-allowed">` :
+                `<input type="time" id="${baseId}_start" onchange="calcRow('${baseId}', '${task.timeKey}', ${isPermit})" class="border rounded px-2 py-1 text-[11px] outline-none">
+                 <i class="fas fa-times-circle btn-clear-time" onclick="clearTime('${baseId}', 'start', ${isPermit})"></i>
+                 <span class="text-slate-300">a</span>
+                 <input type="time" id="${baseId}_end" onchange="calcRow('${baseId}', '${task.timeKey}', ${isPermit})" class="border rounded px-2 py-1 text-[11px] outline-none">
+                 <i class="fas fa-times-circle btn-clear-time" onclick="clearTime('${baseId}', 'end', ${isPermit})"></i>`;
+
+            return `
+                <tr class="hover:bg-slate-50 transition group text-xs" id="tr_${baseId}">
+                    <td class="p-3 border-b font-medium w-1/4">
+                        <div class="flex items-center justify-between">
+                            <div class="${isDist ? 'text-indigo-800 font-bold text-sm' : ''}"><span class="${!isFirst ? 'pl-6 text-slate-400 italic' : ''}">${isFirst ? task.label : 'Registro adicional'}</span> ${btnIncidencia}</div>
+                            ${actBtn}
+                        </div>
+                    </td>
+                    <td class="p-3 border-b w-56 text-center"><div class="time-cell-wrapper flex flex-wrap justify-center items-center gap-1">
+                        ${timeInputs}
+                    </div></td>
+                    <td class="p-3 border-b text-center w-20"><input type="text" id="${baseId}_real" data-val="0" readonly class="${isDist ? 'text-indigo-700' : ''} w-full text-center bg-transparent font-bold" placeholder="-"></td>
+                    
+                    <td class="p-3 border-b text-center w-24"><input type="text" id="${baseId}_dev" data-val="0" readonly class="w-full text-center bg-transparent font-bold text-[9px]" placeholder="-"></td>
+                    <td class="p-3 border-b"><input type="text" id="${baseId}_inc" placeholder="${isDist ? 'Cálculo automático global...' : '...'}" class="w-full border rounded px-2 py-1 outline-none text-[10px]" ${isDist ? 'disabled class="bg-gray-50 text-gray-400 italic font-medium border-none"' : ''}></td>
+                </tr>`;
+        }
+
+        function createIncidenciaRowHTML(pId, taskId, inc) {
+            const baseId = `inc_${pId}_${inc.id}`;
+            let options = appData.config.lists.incidencias.map(i => `<option value="${i}" ${inc.tipo === i ? 'selected' : ''}>${i}</option>`).join('');
+            
+            return `
+                <tr class="bg-orange-50/50 hover:bg-orange-50 transition text-xs border-l-4 ${inc.linkedRowId ? 'border-l-orange-500' : 'border-l-yellow-400'} shadow-inner" id="tr_${baseId}">
+                    <td class="p-2 border-b pl-6">
+                        <div class="flex items-center gap-2">
+                            ${inc.linkedRowId ? '<i class="fas fa-level-up-alt rotate-90 text-orange-400"></i>' : '<i class="fas fa-exclamation-circle text-yellow-500"></i>'}
+                            <select id="${baseId}_tipo" class="border rounded px-2 py-1 text-[10px] w-full outline-none text-orange-900 bg-white shadow-sm" onchange="checkIncidenciaOtros('${baseId}')">
+                                <option value="" disabled ${!inc.tipo ? 'selected' : ''}>Seleccione incidencia...</option>
+                                ${options}
+                            </select>
+                            <button type="button" onclick="eliminarIncidencia('${pId}', '${taskId}', '${inc.id}')" class="text-red-400 hover:text-red-600"><i class="fas fa-times"></i></button>
+                        </div>
+                        <input type="text" id="${baseId}_desc" value="${inc.desc || ''}" placeholder="Descripción obligatoria..." class="${inc.tipo === 'Otros' ? 'block' : 'hidden'} mt-1 ml-5 w-[90%] border rounded px-2 py-1 text-[10px] outline-none">
+                    </td>
+                    <td class="p-2 border-b w-56 text-center"><div class="time-cell-wrapper flex flex-wrap justify-center items-center gap-1">
+                        <input type="time" id="${baseId}_start" value="${inc.start || ''}" onchange="calcIncidencia('${baseId}', '${pId}', '${taskId}', '${inc.id}')" class="border-orange-200 bg-white rounded px-2 py-1 text-[11px] outline-none">
+                        <span class="text-orange-400 font-bold">a</span>
+                        <input type="time" id="${baseId}_end" value="${inc.end || ''}" onchange="autoCalcIncidenciaStart('${baseId}', '${pId}', '${taskId}', '${inc.id}'); calcIncidencia('${baseId}', '${pId}', '${taskId}', '${inc.id}')" class="border-orange-200 bg-white rounded px-2 py-1 text-[11px] outline-none">
+                    </div></td>
+                    <td class="p-2 border-b text-center w-20 text-orange-700 font-bold" id="${baseId}_real_text">${inc.real > 0 ? formatTimeSpan(inc.real) : '-'}</td>
+                    <td class="p-2 border-b text-center text-slate-400 w-20 text-[9px] font-bold">-</td>
+                    <td class="p-2 border-b text-center w-24">-</td>
+                    <td class="p-2 border-b text-orange-600/70 text-[9px] italic font-medium">${inc.linkedRowId ? 'Imputado a exceso de tarea' : 'Incidencia manual independiente'}</td>
+                </tr>
+            `;
+        }
+
+        // LÓGICA DE AUTOCÁLCULO GLOBAL DE DISTRIBUCIÓN
+        function recalcDistribucionInterval() {
+            let intervals = [];
+            const timeInputs = document.querySelectorAll('input[type="time"]');
+            
+            const parseToMins = (str) => {
+                if(!str) return null;
+                const [h, m] = str.split(':').map(Number);
+                return h * 60 + m;
+            };
+
+            timeInputs.forEach(inp => {
+                if(inp.id.includes('distribucion_start') || inp.id.includes('distribucion_end')) return;
+                if(inp.id.endsWith('_start')) {
+                    let endInp = document.getElementById(inp.id.replace('_start', '_end'));
+                    let sVal = inp.value;
+                    let eVal = endInp ? endInp.value : null;
+                    if(sVal) intervals.push({type: 'start', val: parseToMins(sVal), raw: sVal});
+                    if(eVal) intervals.push({type: 'end', val: parseToMins(eVal), raw: eVal});
+                }
+            });
+
+            const distStart = document.querySelector('[id^="initial_distribucion_"][id$="_start"]');
+            const distEnd = document.querySelector('[id^="initial_distribucion_"][id$="_end"]');
+
+            if(intervals.length === 0) {
+                if(distStart) distStart.value = '';
+                if(distEnd) distEnd.value = '';
+                if(distStart) calcRow(distStart.id.replace('_start', ''), 'distribucion', false);
+                return;
+            }
+
+            let hasLate = intervals.some(i => i.val >= 1080); // > 18:00
+            let hasEarly = intervals.some(i => i.val <= 360); // < 06:00
+            
+            intervals.forEach(i => {
+                if(hasLate && hasEarly && i.val <= 720) { // ajusta pasada medianoche
+                    i.adjusted = i.val + 1440;
+                } else {
+                    i.adjusted = i.val;
+                }
+            });
+
+            intervals.sort((a, b) => a.adjusted - b.adjusted);
+            
+            let minRaw = intervals[0].raw;
+            let maxRaw = intervals[intervals.length - 1].raw;
+            
+            if(distStart && distEnd) {
+                distStart.value = minRaw;
+                distEnd.value = maxRaw;
+                calcRow(distStart.id.replace('_start', ''), 'distribucion', false);
+            }
+        }
+
+        function checkIncidenciaOtros(baseId) {
+            const val = document.getElementById(baseId + '_tipo').value;
+            const desc = document.getElementById(baseId + '_desc');
+            if(val === 'Otros') desc.classList.remove('hidden');
+            else desc.classList.add('hidden');
+        }
+
+        function calcRow(bid, tk, isPermit) {
+            const sv = document.getElementById(bid+'_start')?.value; const ev = document.getElementById(bid+'_end')?.value;
+            const rEl = document.getElementById(bid+'_real'); const dEl = document.getElementById(bid+'_dev');
+            const btnInc = document.getElementById('btn_inc_'+bid);
+            
+            if(!sv || !ev) { 
+                if(rEl){rEl.value='-'; rEl.dataset.val=0;} 
+                if(dEl){dEl.value='-'; dEl.dataset.val=0; dEl.className="w-full text-center bg-transparent font-bold text-[9px]";} 
+                if(btnInc) btnInc.classList.add('hidden');
+                if(tk !== 'distribucion') setTimeout(recalcDistribucionInterval, 50);
+                return; 
+            }
+            let s = new Date('1970-01-01T'+sv+':00'); let e = new Date('1970-01-01T'+ev+':00'); if(e < s) e.setDate(e.getDate()+1);
+            let diff = Math.round((e-s)/60000); rEl.value = formatTimeSpan(diff); rEl.dataset.val = diff;
+            
+            if(tk && dEl) {
+                let p = appData.config.times[tk] || 0;
+                let dev = diff - p;
+                if(dev > 0) { 
+                    dEl.value = '+'+formatTimeSpan(dev); 
+                    dEl.className = "w-full text-center font-bold bg-red-100 text-red-700 rounded text-[9px] py-0.5"; 
+                    if(isPermit && btnInc) btnInc.classList.remove('hidden');
+                }
+                else { 
+                    dEl.value = 'OK'; 
+                    dEl.className = "w-full text-center font-bold bg-green-100 text-green-700 rounded text-[9px] py-0.5"; 
+                    if(isPermit && btnInc) btnInc.classList.add('hidden');
+                }
+                dEl.dataset.val = dev;
+            }
+            if(tk !== 'distribucion') setTimeout(recalcDistribucionInterval, 50);
+        }
+
+        function autoCalcIncidenciaStart(baseId, pId, taskId, incId) {
+            const p = currentDraft.permisos.find(x => x.id === pId);
+            if (!p) return;
+            const inc = p.sections[taskId].find(x => x.id === incId);
+            if (inc && inc.linkedRowId) {
+                const rowBaseId = `p_${pId}_${taskId}_${inc.linkedRowId}`;
+                const devInput = document.getElementById(rowBaseId + '_dev');
+                const endInput = document.getElementById(baseId + '_end');
+                const startInput = document.getElementById(baseId + '_start');
+                
+                if (devInput && endInput && endInput.value && startInput) {
+                    let devMins = parseInt(devInput.dataset.val) || 0;
+                    if (devMins > 0) {
+                        let d = new Date('1970-01-01T' + endInput.value + ':00');
+                        d.setMinutes(d.getMinutes() - devMins);
+                        startInput.value = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                    }
+                }
+            }
+            setTimeout(recalcDistribucionInterval, 50);
+        }
+
+        function calcIncidencia(bid, pId, taskId, incId) {
+            const sv = document.getElementById(bid+'_start')?.value; const ev = document.getElementById(bid+'_end')?.value;
+            const txt = document.getElementById(bid+'_real_text');
+            if(!sv || !ev) { if(txt) txt.innerText = '-'; setTimeout(recalcDistribucionInterval, 50); return; }
+            let s = new Date('1970-01-01T'+sv+':00'); let e = new Date('1970-01-01T'+ev+':00'); if(e < s) e.setDate(e.getDate()+1);
+            let diff = Math.round((e-s)/60000);
+            if(txt) txt.innerText = formatTimeSpan(diff);
+            
+            const p = currentDraft.permisos.find(x => x.id === pId);
+            if(p) {
+                const inc = p.sections[taskId].find(x => x.id === incId);
+                if(inc) { inc.real = diff; inc.start = sv; inc.end = ev; }
+            }
+            setTimeout(recalcDistribucionInterval, 50);
+        }
+
+        function clearTime(bid, suf, isPermit) { const el = document.getElementById(bid+'_'+suf); if(el){ el.value=''; calcRow(bid, null, isPermit); } setTimeout(recalcDistribucionInterval, 50); }
+        
+        function addRowInit(t) { currentDraft.initialTasks[t].push(getUniqueId()); renderInitialTasks(); }
+        function delRowInit(t, r) { if(currentDraft.initialTasks[t].length > 1){ currentDraft.initialTasks[t] = currentDraft.initialTasks[t].filter(x => x !== r); renderInitialTasks(); setTimeout(recalcDistribucionInterval, 50); } }
+        
+        function addRowCierre(t) { currentDraft.cierreTasks[t].push(getUniqueId()); renderCierreTasks(); }
+        function delRowCierre(t, r) { if(currentDraft.cierreTasks[t].length > 1){ currentDraft.cierreTasks[t] = currentDraft.cierreTasks[t].filter(x => x !== r); renderCierreTasks(); setTimeout(recalcDistribucionInterval, 50); } }
+
+        function addRowPermit(pId, t) { 
+            const p = currentDraft.permisos.find(x => x.id === pId); 
+            if(p){ p.sections[t].push({ type: 'row', id: getUniqueId() }); renderPermits(); } 
+        }
+        function delRowPermit(pId, t, r) { 
+            const p = currentDraft.permisos.find(x => x.id === pId); 
+            if(p){ 
+                const rowsCount = p.sections[t].filter(x => x.type === 'row').length;
+                if (rowsCount > 1) {
+                    p.sections[t] = p.sections[t].filter(x => x.id !== r); 
+                    renderPermits(); 
+                    setTimeout(recalcDistribucionInterval, 50);
+                }
+            } 
+        }
+        
+        function agregarPermiso() { 
+            const pid = getUniqueId(); const s = {}; 
+            permitTasksDef.forEach(t => s[t.id] = [{ type: 'row', id: getUniqueId() }]); 
+            currentDraft.permisos.push({id: pid, sections: s}); 
+            renderPermits(); 
+        }
+        function eliminarPermiso(pid) { if(currentDraft.permisos.length > 1){ currentDraft.permisos = currentDraft.permisos.filter(x => x.id !== pid); renderPermits(); setTimeout(recalcDistribucionInterval, 50); } }
+        
+        function agregarIncidencia(pId, taskId, rowId, rowBaseId) {
+            const p = currentDraft.permisos.find(x => x.id === pId);
+            if(p) {
+                const saved = getSavedValues('#permits-container');
+                let calcStart = '';
+                let calcEnd = '';
+                let devMins = 0;
+
+                if (rowBaseId) {
+                    const devInput = document.getElementById(rowBaseId + '_dev');
+                    const endInput = document.getElementById(rowBaseId + '_end');
+                    if (devInput && endInput && endInput.value) {
+                        devMins = parseInt(devInput.dataset.val) || 0;
+                        if (devMins > 0) {
+                            calcEnd = endInput.value;
+                            let d = new Date('1970-01-01T' + calcEnd + ':00');
+                            d.setMinutes(d.getMinutes() - devMins);
+                            calcStart = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                        }
+                    }
+                }
+
+                let section = p.sections[taskId];
+                let newInc = { 
+                    type: 'incidencia', id: getUniqueId(), linkedRowId: rowId || null, 
+                    start: calcStart, end: calcEnd, tipo: '', desc: '', real: devMins 
+                };
+                
+                if (rowId) {
+                     let idx = section.findIndex(item => item.id === rowId);
+                     if (idx !== -1) section.splice(idx + 1, 0, newInc);
+                     else section.push(newInc);
+                } else {
+                     section.push(newInc);
+                }
+                renderPermits();
+                setTimeout(recalcDistribucionInterval, 50);
+            }
+        }
+        
+        function eliminarIncidencia(pId, taskId, incId) {
+            const p = currentDraft.permisos.find(x => x.id === pId);
+            if(p) { p.sections[taskId] = p.sections[taskId].filter(x => x.id !== incId); renderPermits(); setTimeout(recalcDistribucionInterval, 50); }
+        }
+
+        function agregarEjecutante() { const i = document.getElementById('nuevoEjecutante'); const n = i.value.trim().toUpperCase(); if(n && !currentDraft.ejecutantes.includes(n)){ currentDraft.ejecutantes.push(n); i.value=''; renderEjecutantes(); } }
+        function renderEjecutantes() { document.getElementById('lista-ejecutantes').innerHTML = currentDraft.ejecutantes.map(e => `<div class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-[10px] font-bold border border-indigo-200 flex items-center gap-2">${e} <button type="button" onclick="currentDraft.ejecutantes=currentDraft.ejecutantes.filter(x=>x!=='${e}');renderEjecutantes();" class="hover:text-red-500">×</button></div>`).join(''); }
+
+        function aplicarListasADesplegables() {
+            const sEl = document.getElementById('site');
+            sEl.innerHTML = '<option value="" disabled selected>Seleccione SITE...</option>' + appData.config.lists.sites.map(x => `<option value="${x}">${x}</option>`).join('');
+        }
+
+        function guardarAuditoria(e) {
+            e.preventDefault(); if(!currentDraft.ejecutantes.length) return showToast("Añade ejecutantes.", "error");
+            try {
+                // Forzamos calculo de distribución de nuevo antes de guardar
+                recalcDistribucionInterval();
+
+                const audit = {
+                    id: editingAuditId || getUniqueId(), fecha: document.getElementById('fecha').value,
+                    diaSemana: document.getElementById('diaSemana').value,
+                    site: document.getElementById('site').value, 
+                    auditor: document.getElementById('auditor').value, supervisor: document.getElementById('supervisor').value,
+                    ejecutantes: [...currentDraft.ejecutantes], 
+                    tareasIniciales: {}, tareasCierre: {}, permisosData: []
+                };
+                initialTasksDef.forEach(t => audit.tareasIniciales[t.id] = (currentDraft.initialTasks[t.id] || []).map(rid => extractRowData(`initial_${t.id}_${rid}`)));
+                cierreTasksDef.forEach(t => audit.tareasCierre[t.id] = (currentDraft.cierreTasks[t.id] || []).map(rid => extractRowData(`cierre_${t.id}_${rid}`)));
+                
+                currentDraft.permisos.forEach(p => {
+                    const po = { 
+                        id: p.id, numero: document.getElementById(`p_num_${p.id}`).value, 
+                        tipo: document.getElementById(`p_tipo_${p.id}`).value,
+                        planta: document.getElementById(`p_planta_${p.id}`)?.value || '',
+                        especialidad: document.getElementById(`p_esp_${p.id}`)?.value || '',
+                        tareas: {}, incidencias: [], sectionsOrder: {}
+                    };
+                    permitTasksDef.forEach(t => {
+                        po.tareas[t.id] = [];
+                        po.sectionsOrder[t.id] = [];
+                        p.sections[t.id].forEach(item => {
+                            po.sectionsOrder[t.id].push(item.type);
+                            if (item.type === 'row') {
+                                const bid = `p_${p.id}_${t.id}_${item.id}`;
+                                po.tareas[t.id].push(extractRowData(bid));
+                            } else if (item.type === 'incidencia') {
+                                const baseId = `inc_${p.id}_${item.id}`;
+                                const tipo = document.getElementById(baseId+'_tipo')?.value;
+                                const desc = document.getElementById(baseId+'_desc')?.value;
+                                const s = document.getElementById(baseId+'_start')?.value;
+                                const en = document.getElementById(baseId+'_end')?.value;
+                                
+                                let diff = 0;
+                                if(s && en) {
+                                    let s_date = new Date('1970-01-01T'+s+':00'); 
+                                    let e_date = new Date('1970-01-01T'+en+':00'); 
+                                    if(e_date < s_date) e_date.setDate(e_date.getDate()+1);
+                                    diff = Math.round((e_date-s_date)/60000);
+                                }
+                                
+                                if(tipo && s && en) {
+                                    po.incidencias.push({ taskId: t.id, tipo: tipo, desc: desc, start: s, end: en, real: diff });
+                                }
+                            }
+                        });
+                    });
+                    audit.permisosData.push(po);
                 });
-            } else {
-                errorMsg.style.opacity = "1";
-                document.getElementById('entry-pass').value = "";
-                document.getElementById('entry-pass').focus();
-                setTimeout(() => errorMsg.style.opacity = "0", 2000);
-            }
+                
+                if(editingAuditId){ const idx = appData.audits.findIndex(x => x.id === editingAuditId); if(idx !== -1) appData.audits[idx] = audit; }
+                else { appData.audits.unshift(audit); }
+                showToast("Guardado con éxito", "success"); resetForms(); switchTab('dataTab');
+            } catch(err) { showToast("Error al procesar", "error"); console.error(err); }
         }
 
-        function launchApp(base64Compressed) {
-            const binaryString = atob(base64Compressed);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-
-            const decompressed = fflate.unzlibSync(bytes);
-            const decoded = new TextDecoder().decode(decompressed);
-
-            const frame = document.getElementById('app-frame');
-            const login = document.getElementById('login-screen');
-            
-            login.style.display = 'none';
-            frame.style.display = 'block';
-            
-            const doc = frame.contentWindow.document;
-            doc.open();
-            doc.write(decoded);
-            doc.close();
+        function extractRowData(bid) {
+            const r = document.getElementById(bid+'_real'); const d = document.getElementById(bid+'_dev');
+            return { start: document.getElementById(bid+'_start')?.value || '', end: document.getElementById(bid+'_end')?.value || '', real: r && r.dataset.val ? parseInt(r.dataset.val) : 0, dev: d && d.dataset.val ? parseInt(d.dataset.val) : 0, incidencia: document.getElementById(bid+'_inc')?.value || '' };
         }
 
-        document.getElementById('entry-pass').addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') checkAccess();
-        });
+        function renderDataTable() {
+            const tbody = document.getElementById('data-table-body');
+            document.getElementById('total-registros').innerText = appData.audits.length;
+            if(!appData.audits.length){ tbody.innerHTML = '<tr><td colspan="22" class="p-8 text-center text-slate-400 italic font-bold">Sin registros</td></tr>'; return; }
+            const sTerm = document.getElementById('searchData').value.toLowerCase();
+            
+            let globalProd = 0, globalTotal = 0;
+
+            const headTr = document.querySelector('#dataTab thead tr');
+            if(headTr && !headTr.dataset.patched) {
+                headTr.innerHTML = `
+                    <th class="p-2">Fecha</th><th class="p-2">Auditor</th><th class="p-2">Supervisor</th><th class="p-2">Site</th><th class="p-2">Ejecutantes</th><th class="p-2 min-w-[150px]">Permisos</th>
+                    <th class="p-2 text-center bg-slate-100">Dist.</th>
+                    <th class="p-2 text-center bg-indigo-50">Charla</th><th class="p-2 text-center bg-indigo-50">F.Aut</th><th class="p-2 text-center bg-indigo-50">F.EC</th><th class="p-2 text-center bg-indigo-50">F.SE</th><th class="p-2 text-center bg-indigo-50">F.Comp</th>
+                    <th class="p-2 text-center font-bold text-indigo-700 bg-indigo-100">T.Ejec. (+8h)</th>
+                    <th class="p-2 text-center bg-indigo-50">Cierre</th>
+                    <th class="p-2 text-center bg-orange-50 text-orange-800 font-bold">Incidencias</th>
+                    <th class="p-2 text-center bg-slate-100 font-bold text-slate-600 border-x">Fin Jor.</th>
+                    <th class="p-2 text-center font-bold bg-slate-200 text-indigo-900">Total</th><th class="p-2 text-center">Acciones</th>
+                `;
+                headTr.dataset.patched = "true";
+            }
+
+            tbody.innerHTML = appData.audits
+            .filter(a => (a.supervisor||'').toLowerCase().includes(sTerm) || (a.site||'').toLowerCase().includes(sTerm) || (a.auditor||'').toLowerCase().includes(sTerm))
+            .map(a => {
+                const sumI = (tid) => (a.tareasIniciales && a.tareasIniciales[tid] ? a.tareasIniciales[tid].reduce((acc, r) => acc + (r.real || 0), 0) : 0);
+                const sumC = (tid) => (a.tareasCierre && a.tareasCierre[tid] ? a.tareasCierre[tid].reduce((acc, r) => acc + (r.real || 0), 0) : 0);
+                const sumP = (tid) => (a.permisosData||[]).reduce((acc, p) => acc + (p.tareas && p.tareas[tid] ? p.tareas[tid].reduce((ra, r) => ra + (r.real || 0), 0) : 0), 0);
+                const sumInc = () => (a.permisosData||[]).reduce((acc, p) => acc + (p.incidencias ? p.incidencias.reduce((ra, i) => ra + (i.real || 0), 0) : 0), 0);
+
+                const totPermisos = (a.permisosData || []).reduce((acc, p) => acc + permitTasksDef.reduce((pAcc, t) => pAcc + (p.tareas && p.tareas[t.id] ? p.tareas[t.id].reduce((ra, r) => ra + (r.real || 0), 0) : 0), 0), 0);
+                const totIncidencias = sumInc();
+                
+                const totalRealAuditado = sumI('distribucion') + totPermisos + totIncidencias + sumC('finJornada');
+                const gap = Math.max(0, 480 - totalRealAuditado);
+                
+                const prod = sumI('distribucion') + totPermisos; 
+                const totalJornadaFinal = totalRealAuditado + gap;
+
+                globalProd += prod;
+                globalTotal += totalJornadaFinal;
+
+                return `
+                    <tr class="hover:bg-indigo-50 border-b transition">
+                        <td class="p-2 font-medium">${a.fecha}</td>
+                        <td class="p-2 font-bold text-teal-800">${a.auditor || '-'}</td>
+                        <td class="p-2 font-bold text-blue-800">${a.supervisor}</td>
+                        <td class="p-2">${a.site}</td>
+                        <td class="p-2 truncate max-w-[80px]" title="${(a.ejecutantes||[]).join(', ')}">${(a.ejecutantes||[]).join(', ')}</td>
+                        <td class="p-2 text-[9px] break-words whitespace-normal min-w-[150px]">${(a.permisosData||[]).map(p => `<span class="bg-indigo-100 text-indigo-900 px-1 rounded mr-1 font-bold">${p.numero} (${p.especialidad})</span>`).join('')}</td>
+                        <td class="p-2 text-center bg-slate-50">${formatTimeSpan(sumI('distribucion'))}</td>
+                        <td class="p-2 text-center bg-indigo-50">${formatTimeSpan(sumP('charla'))}</td><td class="p-2 text-center bg-indigo-50">${formatTimeSpan(sumP('firmaAut'))}</td><td class="p-2 text-center bg-indigo-50">${formatTimeSpan(sumP('firmaEC'))}</td><td class="p-2 text-center bg-indigo-50">${formatTimeSpan(sumP('firmaSE'))}</td><td class="p-2 text-center bg-indigo-50">${formatTimeSpan(sumP('firmaComp'))}</td>
+                        <td class="p-2 text-center font-bold text-indigo-800 bg-indigo-100">${formatTimeSpan(sumP('ejecucion') + gap)}</td>
+                        <td class="p-2 text-center bg-indigo-50">${formatTimeSpan(sumP('cierre'))}</td>
+                        <td class="p-2 text-center bg-orange-50 font-bold text-orange-800">${formatTimeSpan(totIncidencias)}</td>
+                        <td class="p-2 text-center bg-slate-50 font-bold border-x text-slate-500">${formatTimeSpan(sumC('finJornada'))}</td>
+                        <td class="p-2 text-center font-bold bg-slate-200 text-indigo-950">${formatTimeSpan(totalJornadaFinal)}</td>
+                        <td class="p-2 text-center flex gap-2 justify-center">
+                            <button onclick="mostrarAnalisisExtenso('${a.id}')" class="text-indigo-500 hover:text-indigo-800 hover:scale-110 transition text-lg" title="Análisis Extenso"><i class="fas fa-chart-pie"></i></button>
+                            <button onclick="cargarParaEditar('${a.id}')" class="text-amber-500 hover:text-amber-700 hover:scale-110 transition text-lg" title="Editar Registro"><i class="fas fa-edit"></i></button>
+                        </td>
+                    </tr>`;
+            }).join('');
+            
+            const pr = globalTotal > 0 ? Math.round((globalProd / globalTotal) * 100) : 0;
+            document.getElementById('prod-summary').innerHTML = `
+                <span class="text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded">PRODUCTIVO: ${formatTimeSpan(globalProd)} (${pr}%)</span>
+                <span class="text-orange-600 bg-orange-50 border border-orange-200 px-2 py-1 rounded">IMPRODUCTIVO: ${formatTimeSpan(globalTotal - globalProd)} (${100-pr}%)</span>`;
+        }
+
+        // LÓGICA PARA GRÁFICOS FULL COLOR
+        
+        function mostrarAnalisisExtenso(id) {
+            const a = appData.audits.find(x => x.id === id); 
+            if(!a) return;
+            
+            const formatHumano = (minutos) => {
+                if (minutos === undefined || minutos === null || minutos <= 0) return '0m';
+                const h = Math.floor(minutos / 60);
+                const m = Math.round(minutos % 60);
+                return h > 0 ? `${h}h ${m}m` : `${m}m`;
+            };
+
+            const modalContent = document.querySelector('#chart-modal .max-w-5xl');
+            
+            // Inyectar Selectores si no existen
+            let selectorsContainer = document.getElementById('analisis-selectors-v5');
+            if(!selectorsContainer) {
+                selectorsContainer = document.createElement('div');
+                selectorsContainer.id = 'analisis-selectors-v5';
+                selectorsContainer.className = 'flex flex-wrap gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 shrink-0';
+                modalContent.insertBefore(selectorsContainer, modalContent.children[1]);
+            }
+
+            const numPermisos = a.permisosData.map(p => p.numero);
+            selectorsContainer.innerHTML = `
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filtrar por Permiso</label>
+                    <select id="sel-permiso" class="border rounded px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700">
+                        <option value="all">Todos los permisos</option>
+                        ${numPermisos.map(n => `<option value="${n}">Permiso #${n}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filtrar por Categoría</label>
+                    <select id="sel-categoria" class="border rounded px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700">
+                        <option value="all">Todas las categorías</option>
+                        <option value="distribucion">Distribución de Jornada</option>
+                        <option value="charla">Charlas Pre-tarea</option>
+                        <option value="firmas">Firmas de Permiso</option>
+                        <option value="ejecucion">Tiempo de Ejecución</option>
+                        <option value="cierre">Cierre / Suspensión</option>
+                        <option value="incidencias">Incidencias</option>
+                        <option value="finJornada">Fin de Jornada</option>
+                    </select>
+                </div>
+            `;
+
+            const updateView = () => {
+                const selP = document.getElementById('sel-permiso').value;
+                const selC = document.getElementById('sel-categoria').value;
+
+                // Cálculos base
+                const sumR = (arr) => (arr || []).reduce((acc, r) => acc + (r.real || 0), 0);
+                
+                let d = (selP === 'all' && (selC === 'all' || selC === 'distribucion')) ? sumR(a.tareasIniciales?.distribucion) : 0;
+                let fj = (selP === 'all' && (selC === 'all' || selC === 'finJornada')) ? sumR(a.tareasCierre?.finJornada) : 0;
+                
+                let c = 0, f = 0, e = 0, s = 0, incTotal = 0;
+                const permsFiltrados = selP === 'all' ? a.permisosData : a.permisosData.filter(p => p.numero === selP);
+
+                permsFiltrados.forEach(p => {
+                    if(selC === 'all' || selC === 'charla') c += sumR(p.tareas?.charla);
+                    if(selC === 'all' || selC === 'firmas') f += (sumR(p.tareas?.firmaAut) + sumR(p.tareas?.firmaEC) + sumR(p.tareas?.firmaSE) + sumR(p.tareas?.firmaComp));
+                    if(selC === 'all' || selC === 'ejecucion') e += sumR(p.tareas?.ejecucion);
+                    if(selC === 'all' || selC === 'cierre') s += sumR(p.tareas?.cierre);
+                    if(selC === 'all' || selC === 'incidencias') incTotal += (p.incidencias || []).reduce((acc, i) => acc + (i.real || 0), 0);
+                });
+
+                const totalRegistrado = d + fj + c + f + e + s + incTotal;
+                
+                // Actualizar Resumen de Familias
+                let headerResumen = document.getElementById('resumen-ejecutivo-container');
+                if(!headerResumen) {
+                    headerResumen = document.createElement('div');
+                    headerResumen.id = 'resumen-ejecutivo-container';
+                    headerResumen.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 shrink-0';
+                    modalContent.insertBefore(headerResumen, selectorsContainer.nextSibling);
+                }
+
+                // Familia Improductiva = Solo Incidencias
+                const totalImprod = incTotal;
+                const totalProd = totalRegistrado - totalImprod;
+                const pPct = totalRegistrado > 0 ? ((totalProd / totalRegistrado) * 100).toFixed(1) : 0;
+                const iPct = totalRegistrado > 0 ? ((totalImprod / totalRegistrado) * 100).toFixed(1) : 0;
+
+                headerResumen.innerHTML = `
+                    <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-center shadow-sm">
+                        <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Familia Productiva</p>
+                        <p class="text-3xl font-black text-emerald-800">${formatHumano(totalProd)} <span class="text-lg font-normal">${pPct}%</span></p>
+                    </div>
+                    <div class="bg-rose-50 border border-rose-200 p-4 rounded-xl text-center shadow-sm">
+                        <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Familia Improductiva</p>
+                        <p class="text-3xl font-black text-rose-800">${formatHumano(totalImprod)} <span class="text-lg font-normal">${iPct}%</span></p>
+                    </div>
+                `;
+
+                // Actualizar Gráficos
+                if(window.chart1) window.chart1.destroy();
+                if(window.chart2) window.chart2.destroy();
+
+                const labels = ['Distribución', 'Charlas', 'Firmas', 'Ejecución', 'Cierre', 'Fin Jornada', 'Incidencias'];
+                const data = [d, c, f, e, s, fj, incTotal];
+                const colors = ['#a855f7', '#3b82f6', '#0ea5e9', '#10b981', '#64748b', '#94a3b8', '#f97316'];
+
+                const ctx1 = document.getElementById('chart-tiempos').getContext('2d');
+                window.chart1 = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{ data: data, backgroundColor: colors, borderWidth: 2, borderColor: '#ffffff' }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { size: 10 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: (c) => ` ${c.label}: ${formatHumano(c.raw)} (${totalRegistrado > 0 ? ((c.raw/totalRegistrado)*100).toFixed(1) : 0}%)`
+                                }
+                            }
+                        }
+                    }
+                });
+
+                const incMap = {};
+                permsFiltrados.forEach(p => {
+                    (p.incidencias||[]).forEach(i => {
+                        incMap[i.tipo] = (incMap[i.tipo] || 0) + (i.real || 0);
+                    });
+                });
+                const incLabels = Object.keys(incMap);
+                const incValues = Object.values(incMap);
+
+                const ctx2 = document.getElementById('chart-incidencias').getContext('2d');
+                if (incValues.length > 0) {
+                    window.chart2 = new Chart(ctx2, {
+                        type: 'bar',
+                        data: {
+                            labels: incLabels,
+                            datasets: [{ label: 'Tiempo', data: incValues, backgroundColor: '#f97316' }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            scales: { y: { ticks: { callback: v => formatHumano(v) } } }
+                        }
+                    });
+                } else {
+                    ctx2.canvas.parentNode.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-slate-400 font-bold italic"><p>Sin datos para este filtro</p></div>';
+                }
+            };
+
+            const m = document.getElementById('chart-modal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+
+            setTimeout(() => {
+                document.getElementById('sel-permiso').onchange = updateView;
+                document.getElementById('sel-categoria').onchange = updateView;
+                updateView();
+            }, 50);
+        }
+
+        function cargarParaEditar(id) {
+            const a = appData.audits.find(x => x.id === id); if(!a) return;
+            editingAuditId = id; document.getElementById('edit-badge').classList.remove('hidden'); document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            document.getElementById('submit-text').innerText = "Actualizar Auditoría Diaria"; switchTab('auditTab');
+            document.getElementById('fecha').value = a.fecha; document.getElementById('diaSemana').value = a.diaSemana || '';
+            document.getElementById('site').value = a.site; document.getElementById('supervisor').value = a.supervisor;
+            document.getElementById('auditor').value = a.auditor || '';
+            currentDraft.ejecutantes = [...(a.ejecutantes || [])]; renderEjecutantes();
+            
+            initialTasksDef.forEach(t => currentDraft.initialTasks[t.id] = (a.tareasIniciales && a.tareasIniciales[t.id] ? a.tareasIniciales[t.id] : [0]).map(() => getUniqueId())); renderInitialTasks();
+            cierreTasksDef.forEach(t => currentDraft.cierreTasks[t.id] = (a.tareasCierre && a.tareasCierre[t.id] ? a.tareasCierre[t.id] : [0]).map(() => getUniqueId())); renderCierreTasks();
+            
+            currentDraft.permisos = a.permisosData.map(p => {
+                const s = {}; 
+                permitTasksDef.forEach(t => {
+                    s[t.id] = [];
+                    let rowQueue = [...(p.tareas[t.id] || [])];
+                    let incQueue = (p.incidencias || []).filter(inc => inc.taskId === t.id);
+                    let order = p.sectionsOrder ? p.sectionsOrder[t.id] : null;
+
+                    if (order) {
+                        order.forEach(type => {
+                            if (type === 'row' && rowQueue.length > 0) {
+                                s[t.id].push({ type: 'row', id: getUniqueId(), _oldData: rowQueue.shift() });
+                            } else if (type === 'incidencia' && incQueue.length > 0) {
+                                s[t.id].push({ type: 'incidencia', id: getUniqueId(), _oldData: incQueue.shift(), linkedRowId: null });
+                            }
+                        });
+                    }
+                    rowQueue.forEach(row => s[t.id].push({ type: 'row', id: getUniqueId(), _oldData: row }));
+                    incQueue.forEach(inc => s[t.id].push({ type: 'incidencia', id: getUniqueId(), _oldData: inc, linkedRowId: null }));
+                });
+                return { id: p.id || getUniqueId(), sections: s };
+            }); 
+            renderPermits();
+            
+            a.permisosData.forEach((p, pi) => {
+                const draft = currentDraft.permisos[pi]; 
+                document.getElementById(`p_num_${draft.id}`).value = p.numero; 
+                document.getElementById(`p_tipo_${draft.id}`).value = p.tipo;
+                if(document.getElementById(`p_planta_${draft.id}`)) document.getElementById(`p_planta_${draft.id}`).value = p.planta || '';
+                if(document.getElementById(`p_esp_${draft.id}`)) document.getElementById(`p_esp_${draft.id}`).value = p.especialidad || '';
+                
+                permitTasksDef.forEach(t => {
+                    draft.sections[t.id].forEach(item => {
+                        if (item.type === 'row') {
+                            const bid = `p_${draft.id}_${t.id}_${item.id}`;
+                            const d = item._oldData;
+                            const s = document.getElementById(bid+'_start'); if(s) s.value = d.start; 
+                            const e = document.getElementById(bid+'_end'); if(e) e.value = d.end; 
+                            const i = document.getElementById(bid+'_inc'); if(i) i.value = d.incidencia; 
+                            calcRow(bid, t.timeKey, true);
+                        } else if (item.type === 'incidencia') {
+                            const baseId = `inc_${draft.id}_${item.id}`;
+                            const d = item._oldData;
+                            const s = document.getElementById(baseId+'_start'); if(s) s.value = d.start;
+                            const e = document.getElementById(baseId+'_end'); if(e) e.value = d.end;
+                            const tp = document.getElementById(baseId+'_tipo'); if(tp) tp.value = d.tipo;
+                            const dsc = document.getElementById(baseId+'_desc'); if(dsc) dsc.value = d.desc;
+                            checkIncidenciaOtros(baseId);
+                            calcIncidencia(baseId, draft.id, t.id, item.id);
+                        }
+                    });
+                });
+            });
+            setTimeout(recalcDistribucionInterval, 100);
+            showToast("Registro cargado", "info");
+        }
+
+        function renderConfigFields() {
+            const c = document.getElementById('config-tiempos-container');
+            c.innerHTML = Object.keys(appData.config.times).map(k => `<div class="flex justify-between items-center bg-slate-50 p-2 rounded border"><span class="text-[10px] font-bold uppercase text-slate-500">${k}</span><div class="flex items-center gap-1"><input type="number" id="conf_time_${k}" value="${appData.config.times[k]}" class="w-16 border rounded text-center font-bold text-sm"><span class="text-[9px] text-slate-400">min</span></div></div>`).join('');
+            document.getElementById('conf-sites').value = appData.config.lists.sites.join(', ');
+            document.getElementById('conf-tipos').value = appData.config.lists.tiposPermiso.join(', ');
+        }
+
+        function aplicarConfiguracionManual() {
+            Object.keys(appData.config.times).forEach(k => { const v = parseInt(document.getElementById('conf_time_'+k)?.value); if(!isNaN(v)) appData.config.times[k] = v; });
+            appData.config.lists.sites = document.getElementById('conf-sites').value.split(',').map(x=>x.trim()).filter(Boolean);
+            appData.config.lists.tiposPermiso = document.getElementById('conf-tipos').value.split(',').map(x=>x.trim()).filter(Boolean);
+            aplicarListasADesplegables(); showToast("Configuración aplicada", "success");
+        }
+
+        function copiarLaTeX() {
+            if (!appData.audits || appData.audits.length === 0) return showToast("No hay datos para generar el informe", "error");
+
+            const sTerm = document.getElementById('searchData').value.toLowerCase();
+            const audts = appData.audits.filter(a => (a.supervisor||'').toLowerCase().includes(sTerm) || (a.site||'').toLowerCase().includes(sTerm) || (a.auditor||'').toLowerCase().includes(sTerm));
+
+            if (audts.length === 0) return showToast("No hay datos tras aplicar el filtro", "error");
+
+            let siteName = audts[0].site || "Sitio Desconocido";
+            const allSameSite = audts.every(a => a.site === siteName);
+            if (!allSameSite) siteName = "Global / Múltiples Sites";
+
+            const byDate = {};
+            let sum = { dist:0, char:0, firm:0, ejec:0, cier:0, finj:0, gap:0, inc:0 };
+
+            audts.forEach(a => {
+                const sI = (tid) => (a.tareasIniciales && a.tareasIniciales[tid] ? a.tareasIniciales[tid].reduce((acc, r) => acc + (r.real || 0), 0) : 0);
+                const sC = (tid) => (a.tareasCierre && a.tareasCierre[tid] ? a.tareasCierre[tid].reduce((acc, r) => acc + (r.real || 0), 0) : 0);
+                const sP = (tid) => (a.permisosData||[]).reduce((acc, p) => acc + (p.tareas && p.tareas[tid] ? p.tareas[tid].reduce((ra, r) => ra + (r.real || 0), 0) : 0), 0);
+                const sumInc = () => (a.permisosData||[]).reduce((acc, p) => acc + (p.incidencias ? p.incidencias.reduce((ra, i) => ra + (i.real || 0), 0) : 0), 0);
+
+                let prod = sI('distribucion') + sP('charla') + sP('firmaAut') + sP('firmaEC') + sP('firmaSE') + sP('firmaComp') + sP('ejecucion') + sP('cierre');
+                let incids = sumInc();
+                let cierreTecnico = sC('finJornada');
+                let repImprod = cierreTecnico + incids;
+                
+                let total = prod + repImprod;
+                let gap = Math.max(0, 480 - total);
+                let improdFinal = repImprod + gap;
+
+                if(!byDate[a.fecha]) byDate[a.fecha] = { p:0, i:0, count:0, hasMult: false };
+                else byDate[a.fecha].hasMult = true;
+
+                byDate[a.fecha].p += prod;
+                byDate[a.fecha].i += improdFinal;
+                byDate[a.fecha].count += 1;
+
+                sum.dist += sI('distribucion'); sum.char += sP('charla'); sum.firm += sP('firmaAut') + sP('firmaEC') + sP('firmaSE') + sP('firmaComp'); 
+                sum.ejec += sP('ejecucion'); sum.cier += sP('cierre'); sum.finj += cierreTecnico; 
+                sum.inc += incids; sum.gap += gap;
+            });
+
+            let N = audts.length;
+            let avg = (val) => (val/N).toFixed(2);
+            let pct = (val) => ((val/N/480)*100).toFixed(2);
+
+            let tableProd = ''; let tableImprod = ''; let globalProdSum = 0; let globalImprodSum = 0; let anyMulti = false;
+            let dKeys = Object.keys(byDate).sort();
+
+            dKeys.forEach(d => {
+                let n = byDate[d].count; let pAvg = byDate[d].p / n; let iAvg = byDate[d].i / n;
+                globalProdSum += pAvg; globalImprodSum += iAvg;
+                if(byDate[d].hasMult) anyMulti = true;
+                let mark = byDate[d].hasMult ? '*' : '';
+                tableProd += `${d}${mark} & ${pAvg.toFixed(2)} min & ${(pAvg/4.8).toFixed(2)}\\% \\\\
+`;
+                tableImprod += `${d}${mark} & ${iAvg.toFixed(2)} min & ${(iAvg/4.8).toFixed(2)}\\% \\\\
+`;
+            });
+
+            let days = dKeys.length;
+            let meanP = (globalProdSum/days).toFixed(2); let meanI = (globalImprodSum/days).toFixed(2);
+            let meanP_pct = (globalProdSum/days/4.8).toFixed(2); let meanI_pct = (globalImprodSum/days/4.8).toFixed(2);
+
+            let noteTxt = anyMulti ? `\\noindent \\textbf{*Nota aclaratoria:} Existen días con múltiples registros de auditoría; se ha promediado la suma de ellos para normalizar el valor diario.\n\n` : '';
+
+            const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+            const dObj = new Date(dKeys[dKeys.length-1] || new Date());
+            let dateStr = `${monthNames[dObj.getMonth()]} ${dObj.getFullYear()}`;
+
+            const buildPie = (arr) => arr.filter(x => parseFloat(x.v) > 0.01).map(x => `${x.v}/${x.l}`).join(',\n    ');
+
+            const pieProd = buildPie([
+                {v: avg(sum.dist), l: `Dist. Jornada (${avg(sum.dist)} min - ${pct(sum.dist)}\\%)`},
+                {v: avg(sum.char), l: `Charlas (${avg(sum.char)} min - ${pct(sum.char)}\\%)`},
+                {v: avg(sum.firm), l: `Firmas Total (${avg(sum.firm)} min - ${pct(sum.firm)}\\%)`},
+                {v: avg(sum.ejec), l: `Ejecución (${avg(sum.ejec)} min - ${pct(sum.ejec)}\\%)`},
+                {v: avg(sum.cier), l: `Cierre (${avg(sum.cier)} min - ${pct(sum.cier)}\\%)`},
+                {v: meanI, l: `Tiempo Restante (Improductivo) (${meanI} min - ${meanI_pct}\\%)`}
+            ]);
+
+            const pieImprod = buildPie([
+                {v: avg(sum.finj), l: `Fin de Jornada (${avg(sum.finj)} min - ${pct(sum.finj)}\\%)`},
+                {v: avg(sum.inc), l: `Incidencias Intra-Permiso (${avg(sum.inc)} min - ${pct(sum.inc)}\\%)`},
+                {v: avg(sum.gap), l: `Tiempo No Auditado (${avg(sum.gap)} min - ${pct(sum.gap)}\\%)`},
+                {v: meanP, l: `Resto de Jornada (Productivo) (${meanP} min - ${meanP_pct}\\%)`}
+            ]);
+
+            const pieGlobal = buildPie([
+                {v: meanP, l: `Tiempo Productivo (${meanP} min - ${meanP_pct}\\%)`},
+                {v: meanI, l: `Tiempo Improductivo (${meanI} min - ${meanI_pct}\\%)`}
+            ]);
+
+            let tex = `\\documentclass[a4paper,12pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[spanish]{babel}
+\\usepackage{graphicx}
+\\usepackage{geometry}
+\\usepackage{booktabs}
+\\usepackage{pgf-pie}
+\\usepackage{fancyhdr}
+\\usepackage{tikz}
+
+\\geometry{top=2.5cm, bottom=2cm, left=2.5cm, right=2.5cm, headheight=20pt}
+\\pagestyle{fancy}
+\\fancyhf{}
+\\renewcommand{\\headrulewidth}{0pt}
+\\fancyhead[L]{
+    \\begin{tikzpicture}[remember picture, overlay]
+        \\node [anchor=north west, xshift=0.5cm, yshift=-0.1cm, opacity=0.3] at (current page.north west) {
+            \\includegraphics[width=3cm]{logomoncobra.jpg}
+        };
+    \\end{tikzpicture}
+}
+\\fancyfoot[R]{\\thepage}
+
+\\title{Informe de Auditoría Interna - Site: ${siteName}}
+\\author{Mantenimiento integral}
+\\date{${dateStr}}
+
+\\begin{document}
+\\begin{titlepage}
+    \\centering
+    \\vspace*{1cm}
+    \\includegraphics[width=0.6\\textwidth]{logomoncobra.jpg}\\\\[2cm]
+    {\\huge \\bfseries Informe de Auditoría Interna\\\\[0.5cm]}
+    {\\LARGE Moncobra - Site: ${siteName}\\\\[1.5cm]}
+    \\vfill
+    {\\large \\textbf{Departamento:} Mantenimiento integral\\\\[0.3cm]}
+    {\\large \\textbf{Fecha:} ${dateStr}}
+\\end{titlepage}
+
+\\newpage
+\\pagestyle{fancy}
+\\tableofcontents
+\\newpage
+
+\\section{Desglose de Tiempos Productivos}
+En esta sección se detallan los tiempos vinculados a la actividad operativa en el site de \\textbf{${siteName}}. Para el cálculo diario, se ha tomado como referencia una jornada de 8 horas (480 min). Todo el tiempo no auditado se computa como improductivo.
+
+\\subsection{Análisis por Fecha}
+\\begin{table}[h]
+\\centering
+\\begin{tabular}{lcc}
+\\toprule
+\\textbf{Fecha} & \\textbf{Tiempo Productivo (min)} & \\textbf{\\% Productivo} \\\\
+\\midrule
+${tableProd}\\midrule
+\\textbf{Media ${siteName}} & \\textbf{${meanP} min} & \\textbf{${meanP_pct}\\%} \\\\
+\\bottomrule
+\\end{tabular}
+\\end{table}
+
+${noteTxt}\\subsection{Distribución de Actividades Productivas (Media)}
+\\begin{center}
+\\begin{tikzpicture}[scale=0.8]
+\\pie[text=legend, hide number, sum=480]{
+    ${pieProd}
+}
+\\end{tikzpicture}
+\\end{center}
+
+\\section{Análisis de Tiempos Improductivos}
+Se analizan los tiempos no operativos y de inactividad registrados, incluyendo las incidencias y el margen de tiempo no auditado ni justificado en el programa.
+
+\\subsection{Análisis por Fecha}
+\\begin{table}[h]
+\\centering
+\\begin{tabular}{lcc}
+\\toprule
+\\textbf{Fecha} & \\textbf{Tiempo Improductivo (min)} & \\textbf{\\% Improductivo} \\\\
+\\midrule
+${tableImprod}\\midrule
+\\textbf{Media ${siteName}} & \\textbf{${meanI} min} & \\textbf{${meanI_pct}\\%} \\\\
+\\bottomrule
+\\end{tabular}
+\\end{table}
+
+\\subsection{Distribución de Tiempos de Inactividad (Media)}
+\\begin{center}
+\\begin{tikzpicture}[scale=0.8]
+\\pie[text=legend, hide number, sum=480]{
+    ${pieImprod}
+}
+\\end{tikzpicture}
+\\end{center}
+
+\\section{Balance Global de Jornada}
+\\begin{figure}[h!]
+    \\centering
+    \\begin{tikzpicture}[scale=0.9]
+    \\pie[text=legend, hide number, sum=480]{
+        ${pieGlobal}
+    }
+    \\end{tikzpicture}
+    \\caption{Balance de jornada consolidado - Site: ${siteName}}
+\\end{figure}
+
+\\section{Resumen y Conclusiones}
+\\begin{itemize}
+    \\item Informe generado de forma automatizada sobre un total de \\textbf{${N}} registros de auditoría procesados.
+    \\item La actividad productiva neta representa una media del \\textbf{${meanP_pct}\\%} del total de la jornada diaria (480 minutos).
+    \\item El tiempo improductivo asciende a un \\textbf{${meanI_pct}\\%}, englobando inactividad (incidencias) y el Gap del parte.
+\\end{itemize}
+\\end{document}`;
+
+            const t = document.createElement("textarea");
+            t.value = tex;
+            document.body.appendChild(t);
+            t.select();
+            try { document.execCommand('copy'); showToast("Código LaTeX copiado al portapapeles", "success"); }
+            catch (err) { showToast("Error al copiar LaTeX", "error"); }
+            document.body.removeChild(t);
+        }
+
+        
+        function mostrarTendenciasGlobales() {
+            if(!appData.audits || appData.audits.length === 0) return showToast("No hay datos para mostrar", "error");
+
+            const m = document.getElementById('global-chart-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+
+            // Cargar el selector de especialidades si no está cargado
+            const selEsp = document.getElementById('filter-global-esp');
+            if (selEsp.options.length <= 1) {
+                const especialidades = appData.config?.lists?.especialidades || [];
+                especialidades.forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e; opt.text = e;
+                    selEsp.appendChild(opt);
+                });
+            }
+
+            // Ejecutar el dibujado principal
+            updateGlobalCharts();
+        }
+
+        function limpiarFiltrosGlobales() {
+            document.getElementById('filter-global-esp').value = 'all';
+            document.getElementById('filter-global-dia').value = 'all';
+            document.getElementById('filter-global-ini').value = '';
+            document.getElementById('filter-global-fin').value = '';
+            updateGlobalCharts();
+        }
+
+        function updateGlobalCharts() {
+            const fEsp = document.getElementById('filter-global-esp').value;
+            const fDia = document.getElementById('filter-global-dia').value;
+            const fIni = document.getElementById('filter-global-ini').value;
+            const fFin = document.getElementById('filter-global-fin').value;
+
+            // Conservamos también el buscador por texto de la vista base
+            const sTerm = document.getElementById('searchData')?.value.toLowerCase() || '';
+
+            // 1. Filtrado de Auditorías
+            let filteredAudits = appData.audits.filter(a => {
+                // Filtro Buscador
+                if (sTerm && !(a.supervisor||'').toLowerCase().includes(sTerm) && !(a.site||'').toLowerCase().includes(sTerm) && !(a.auditor||'').toLowerCase().includes(sTerm)) return false;
+                
+                // Filtro Rango Fechas
+                if (fIni && a.fecha < fIni) return false;
+                if (fFin && a.fecha > fFin) return false;
+
+                // Filtro Día de la Semana
+                if (fDia !== 'all' && a.diaSemana !== fDia) return false;
+
+                // Filtro Especialidad
+                if (fEsp !== 'all') {
+                    // Verificamos si la auditoría contiene al menos un permiso con esta especialidad
+                    const tieneEspecialidad = (a.permisosData || []).some(p => p.especialidad === fEsp);
+                    if (!tieneEspecialidad) return false;
+                }
+
+                return true;
+            });
+
+            // Agrupar por fecha
+            const dataByDate = {};
+            
+            // Ordenamos cronológicamente
+            const sortedAudits = [...filteredAudits].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+            sortedAudits.forEach(a => {
+                const f = a.fecha;
+                if(!dataByDate[f]) dataByDate[f] = { prod: 0, total: 0, devFin: 0, dia: a.diaSemana };
+
+                // Cálculos base
+                const sumI = (tid) => (a.tareasIniciales && a.tareasIniciales[tid] ? a.tareasIniciales[tid].reduce((acc, r) => acc + (r.real || 0), 0) : 0);
+                const sumC = (tid) => (a.tareasCierre && a.tareasCierre[tid] ? a.tareasCierre[tid].reduce((acc, r) => acc + (r.real || 0), 0) : 0);
+                
+                // Si hemos filtrado por especialidad, solo sumamos los permisos que coincidan. Si no, todos.
+                const permisosAContabilizar = fEsp !== 'all' ? (a.permisosData||[]).filter(p => p.especialidad === fEsp) : (a.permisosData||[]);
+
+                const sumP = (tid) => permisosAContabilizar.reduce((acc, p) => acc + (p.tareas && p.tareas[tid] ? p.tareas[tid].reduce((ra, r) => ra + (r.real || 0), 0) : 0), 0);
+                const sumInc = () => permisosAContabilizar.reduce((acc, p) => acc + (p.incidencias ? p.incidencias.reduce((ra, i) => ra + (i.real || 0), 0) : 0), 0);
+                
+                // Cálculo de la desviación del fin de jornada (Exceso)
+                const devFin = (a.tareasCierre && a.tareasCierre['finJornada']) ? a.tareasCierre['finJornada'].reduce((acc, r) => acc + (r.dev || 0), 0) : 0;
+
+                const prod = sumI('distribucion') + sumP('charla') + sumP('firmaAut') + sumP('firmaEC') + sumP('firmaSE') + sumP('firmaComp') + sumP('ejecucion') + sumP('cierre');
+                const cierreTecnico = sumC('finJornada');
+                const incids = sumInc();
+                
+                const repImprod = cierreTecnico + incids;
+                const totalRealAuditado = prod + repImprod;
+                const gap = Math.max(0, 480 - totalRealAuditado);
+                
+                dataByDate[f].prod += prod;
+                dataByDate[f].total += (totalRealAuditado + gap);
+                dataByDate[f].devFin += Math.max(0, devFin); // Solo sumamos si hubo exceso positivo
+            });
+
+            const labels = Object.keys(dataByDate);
+            const dataProdPct = labels.map(l => dataByDate[l].total > 0 ? Math.round((dataByDate[l].prod / dataByDate[l].total) * 100) : 0);
+            const dataDevs = labels.map(l => dataByDate[l].devFin);
+            const labelsWithDays = labels.map(l => `${l} (${dataByDate[l].dia || ''})`);
+
+            // GRAFICO 1: Tendencia (Linea)
+            const ctx1 = document.getElementById('chart-tendencia-prod').getContext('2d');
+            if(window.chartG1) window.chartG1.destroy();
+            window.chartG1 = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Tendencia Productividad (%)',
+                        data: dataProdPct,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#1d4ed8',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        title: { display: true, text: 'TENDENCIA PRODUCTIVIDAD', font: { size: 16 } },
+                        tooltip: { callbacks: { label: (c) => ` Productividad: ${c.raw}%` } }
+                    },
+                    scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } }
+                }
+            });
+
+            // GRAFICO 2: Mixto (Barras Desviación + Linea Productividad)
+            const ctx2 = document.getElementById('chart-desviacion-fin').getContext('2d');
+            if(window.chartG2) window.chartG2.destroy();
+            window.chartG2 = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: labelsWithDays,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Promedio de PRODUCTIVIDAD (%)',
+                            data: dataProdPct,
+                            borderColor: '#f97316',
+                            backgroundColor: '#f97316',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#ea580c',
+                            yAxisID: 'y1',
+                            tension: 0
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Suma de DESVIACIÓN (min)',
+                            data: dataDevs,
+                            backgroundColor: '#4f46e5',
+                            maxBarThickness: 40, // <-- Límite de anchura máxima para evitar barras "gordas"
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        title: { display: true, text: 'DESVIACIÓN DEL FIN DE JORNADA FRENTE A LA PRODUCTIVIDAD', font: { size: 16 } }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear', display: true, position: 'left',
+                            title: { display: true, text: 'Desviación en minutos' },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        y1: {
+                            type: 'linear', display: true, position: 'right', min: 0, max: 100,
+                            title: { display: true, text: 'Productividad (%)' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function exportarJSON() { const s = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2)); const a = document.createElement('a'); a.href = s; a.download = "Auditoria_Moncobra_Data.json"; a.click(); }
+        function importarJSON(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ex) => { try { const d = JSON.parse(ex.target.result); if(d.audits) { appData = d; renderDataTable(); renderConfigFields(); aplicarListasADesplegables(); showToast("Importado con éxito", "success"); } } catch(err) { showToast("Error", "error"); } }; r.readAsText(f); }
+        function showToast(m, t) { const c = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `${t==='error'?'bg-red-600':'bg-indigo-600'} text-white px-5 py-3 rounded-xl shadow-2xl fade-in text-xs font-bold`; toast.innerText = m; c.appendChild(toast); setTimeout(() => { toast.remove(); }, 4000); }
+        function getSavedValues(s) { const sv = {}; document.querySelectorAll(s + ' input, ' + s + ' select').forEach(el => { sv[el.id] = el.value; if(el.dataset.val) sv[el.id+'_val'] = el.dataset.val; }); return sv; }
+        function restoreSavedValues(sv) { Object.keys(sv).forEach(id => { const el = document.getElementById(id.replace('_val', '')); if(el) { if(id.endsWith('_val')) el.dataset.val = sv[id]; else el.value = sv[id]; } }); }
+        function limpiarDatosInternos() { if(confirm("¿Seguro?")) { appData.audits = []; renderDataTable(); } }
+        
     </script>
 </body>
 </html>
