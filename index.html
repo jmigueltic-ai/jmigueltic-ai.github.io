@@ -4602,6 +4602,7 @@ ${texTablaExcesos}
         var hiddenTipo = document.getElementById(baseId + '_tipo');
         if (!selCat || !hiddenTipo) return;
         var catIdx = selCat.value;
+        if (catIdx === '__raw__') { return; } // valor heredado sin jerarquía: no tocar
         if (catIdx === '' || catIdx === null) {
             poblarSub(baseId, null, null);
             hiddenTipo.value = '';
@@ -4658,8 +4659,76 @@ ${texTablaExcesos}
     window.onSubChange = onSubChange;
     window.onItemChange = onItemChange;
 
+    // Normaliza un texto para comparaciones tolerantes:
+    // minúsculas, sin acentos, sin códigos entre paréntesis "(6.1.)",
+    // sin signos y sin la 's' final de cada palabra (singular/plural).
+    function _incNorm(s) {
+        if (!s && s !== 0) return '';
+        s = ('' + s).toLowerCase();
+        s = s.replace(/[áàä]/g, 'a').replace(/[éèë]/g, 'e').replace(/[íìï]/g, 'i')
+             .replace(/[óòö]/g, 'o').replace(/[úùü]/g, 'u').replace(/ñ/g, 'n')
+             .replace(/º/g, 'o').replace(/ª/g, 'a');
+        s = s.replace(/\([^)]*\)/g, ' ');          // quitar códigos "(4.1.1.2.)"
+        s = s.replace(/[^a-z0-9]+/g, ' ').trim();   // quitar signos y colapsar espacios
+        s = s.split(' ').map(function(w) { return w.replace(/s$/, ''); }).join(' ');
+        return s;
+    }
+
+    // Busca tipoStr entre subcategorías e ítems y, si lo encuentra,
+    // rellena los desplegables. Con fuzzy=true usa comparación tolerante.
+    function _incMatchSubItem(baseId, tipoStr, fuzzy) {
+        var objetivo = fuzzy ? _incNorm(tipoStr) : null;
+        for (var ci = 0; ci < INC_JERARQUIA.length; ci++) {
+            for (var si = 0; si < INC_JERARQUIA[ci].subs.length; si++) {
+                var sub = INC_JERARQUIA[ci].subs[si];
+                var subMatch = fuzzy ? (_incNorm(sub.sub) === objetivo) : (sub.sub === tipoStr);
+                if (subMatch) {
+                    var selCat = document.getElementById(baseId + '_cat');
+                    if (selCat) { selCat.value = ci.toString(); poblarSub(baseId, ci, sub.sub); }
+                    var selSub = document.getElementById(baseId + '_sub');
+                    if (selSub) { selSub.value = si.toString(); poblarItem(baseId, ci, si, null); }
+                    return true;
+                }
+                if (sub.items) {
+                    for (var ii = 0; ii < sub.items.length; ii++) {
+                        var itMatch = fuzzy ? (_incNorm(sub.items[ii]) === objetivo) : (sub.items[ii] === tipoStr);
+                        if (itMatch) {
+                            var selCat2 = document.getElementById(baseId + '_cat');
+                            if (selCat2) { selCat2.value = ci.toString(); poblarSub(baseId, ci, sub.sub); }
+                            var selSub2 = document.getElementById(baseId + '_sub');
+                            if (selSub2) { selSub2.value = si.toString(); poblarItem(baseId, ci, si, sub.items[ii]); }
+                            var selItem2 = document.getElementById(baseId + '_item');
+                            if (selItem2) { selItem2.value = sub.items[ii]; }
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // Último recurso: si el valor guardado no encaja en la jerarquía actual,
+    // lo mostramos tal cual como opción seleccionada del primer desplegable,
+    // para que el dato marcado NUNCA quede invisible. El <input hidden _tipo>
+    // conserva su valor original, así que el recuento no cambia.
+    function _incInyectarValorCrudo(baseId, tipoStr) {
+        var selCat = document.getElementById(baseId + '_cat');
+        if (!selCat) return;
+        var opt = null;
+        for (var k = 0; k < selCat.options.length; k++) {
+            if (selCat.options[k].value === '__raw__') { opt = selCat.options[k]; break; }
+        }
+        if (!opt) { opt = document.createElement('option'); opt.value = '__raw__'; selCat.appendChild(opt); }
+        opt.text = tipoStr;
+        opt.setAttribute('data-raw', tipoStr);
+        selCat.value = '__raw__';
+    }
+
     function resolverTipoEnJerarquia(tipoStr, baseId) {
         if (!tipoStr || tipoStr === '') return;
+
+        // 1) Ruta explícita "Categoría > Subcategoría [> Ítem]"
         if (tipoStr.indexOf(' > ') >= 0) {
             var parts = tipoStr.split(' > ');
             var catName = parts[0], subName = parts.length > 1 ? parts[1] : '', itemName = parts.length > 2 ? parts[2] : '';
@@ -4684,36 +4753,41 @@ ${texTablaExcesos}
                             }
                         }
                     }
-                }
-            }
-            return;
-        }
-        for (var ci = 0; ci < INC_JERARQUIA.length; ci++) {
-            for (var si = 0; si < INC_JERARQUIA[ci].subs.length; si++) {
-                var sub = INC_JERARQUIA[ci].subs[si];
-                if (sub.sub === tipoStr) {
-                    var selCat = document.getElementById(baseId + '_cat');
-                    if (selCat) { selCat.value = ci.toString(); poblarSub(baseId, ci, tipoStr); }
-                    var selSub = document.getElementById(baseId + '_sub');
-                    if (selSub) { selSub.value = si.toString(); poblarItem(baseId, ci, si, null); }
                     return;
                 }
-                if (sub.items) {
-                    for (var ii = 0; ii < sub.items.length; ii++) {
-                        if (sub.items[ii] === tipoStr) {
-                            var selCat2 = document.getElementById(baseId + '_cat');
-                            if (selCat2) { selCat2.value = ci.toString(); poblarSub(baseId, ci, sub.sub); }
-                            var selSub2 = document.getElementById(baseId + '_sub');
-                            if (selSub2) { selSub2.value = si.toString(); poblarItem(baseId, ci, si, tipoStr); }
-                            var selItem2 = document.getElementById(baseId + '_item');
-                            if (selItem2) { selItem2.value = tipoStr; }
-                            return;
-                        }
-                    }
-                }
+                return;
+            }
+            // Si la categoría de la ruta no existe, seguimos intentando abajo.
+        }
+
+        // 2) Coincidencia exacta con una CATEGORÍA (selección de solo categoría)
+        for (var c0 = 0; c0 < INC_JERARQUIA.length; c0++) {
+            if (INC_JERARQUIA[c0].cat === tipoStr) {
+                var selCatA = document.getElementById(baseId + '_cat');
+                if (selCatA) { selCatA.value = c0.toString(); poblarSub(baseId, c0, null); }
+                return;
             }
         }
+
+        // 3) Coincidencia exacta con subcategoría o ítem
+        if (_incMatchSubItem(baseId, tipoStr, false)) return;
+
+        // 4) Coincidencia tolerante (acentos, mayúsculas, códigos, singular/plural)
+        var objetivo = _incNorm(tipoStr);
+        for (var c1 = 0; c1 < INC_JERARQUIA.length; c1++) {
+            if (_incNorm(INC_JERARQUIA[c1].cat) === objetivo) {
+                var selCatB = document.getElementById(baseId + '_cat');
+                if (selCatB) { selCatB.value = c1.toString(); poblarSub(baseId, c1, null); }
+                return;
+            }
+        }
+        if (_incMatchSubItem(baseId, tipoStr, true)) return;
+
+        // 5) Sin equivalencia posible: mostrar el valor guardado tal cual.
+        _incInyectarValorCrudo(baseId, tipoStr);
     }
+    // Exponer para poder repoblar los desplegables desde cargarParaEditar (otro ámbito)
+    window.resolverTipoEnJerarquia = resolverTipoEnJerarquia;
 
     window.createIncidenciaRowHTML = function(pId, taskId, inc) {
         var baseId = 'inc_' + pId + '_' + inc.id;
@@ -5462,7 +5536,7 @@ ${texTablaExcesos}
             defs.forEach(t => { draftSection[t.id].forEach(item => {
                     let baseIdPrefix = pId === 'INITIAL_SECTION' ? 'initial_' : 'cierre_';
                     if (item.type === 'row') { const bid = baseIdPrefix + t.id + '_' + item.id; const d = item._oldData; setTimeout(() => { const s = document.getElementById(bid+'_start'); if(s) s.value = d.start || ''; const e = document.getElementById(bid+'_end'); if(e) e.value = d.end || ''; const inc = document.getElementById(bid+'_inc'); if(inc) inc.value = d.incidencia || ''; calcRowSilent(bid, t.timeKey, pId, t.id); }, 50); }
-                    else if (item.type === 'incidencia') { const baseId = `inc_${pId}_${item.id}`; const d = item._oldData; setTimeout(() => { const s = document.getElementById(baseId+'_start'); if(s) s.value = d.start; const e = document.getElementById(baseId+'_end'); if(e) e.value = d.end; const tp = document.getElementById(baseId+'_tipo'); if(tp) tp.value = d.tipo; const dsc = document.getElementById(baseId+'_desc'); if(dsc) dsc.value = d.desc; const mej = document.getElementById(baseId+'_mejora'); if(mej) mej.value = d.mejora || ''; const emp = document.getElementById(baseId+'_empresa_sel'); if(emp) { emp.value = (appData.config.lists.empresas.includes(d.empresa) || !d.empresa) ? d.empresa : 'Otros'; if(window.checkEmpresaOtros) checkEmpresaOtros(baseId); } const empOtro = document.getElementById(baseId+'_empresa_otro'); if(empOtro && emp && emp.value === 'Otros') empOtro.value = d.empresa; calcIncidencia(baseId, pId, t.id, item.id); }, 50); }
+                    else if (item.type === 'incidencia') { const baseId = `inc_${pId}_${item.id}`; const d = item._oldData; setTimeout(() => { const s = document.getElementById(baseId+'_start'); if(s) s.value = d.start; const e = document.getElementById(baseId+'_end'); if(e) e.value = d.end; const tp = document.getElementById(baseId+'_tipo'); if(tp) tp.value = d.tipo; const dsc = document.getElementById(baseId+'_desc'); if(dsc) dsc.value = d.desc; const mej = document.getElementById(baseId+'_mejora'); if(mej) mej.value = d.mejora || ''; const emp = document.getElementById(baseId+'_empresa_sel'); if(emp) { emp.value = (appData.config.lists.empresas.includes(d.empresa) || !d.empresa) ? d.empresa : 'Otros'; if(window.checkEmpresaOtros) checkEmpresaOtros(baseId); } const empOtro = document.getElementById(baseId+'_empresa_otro'); if(empOtro && emp && emp.value === 'Otros') empOtro.value = d.empresa; if(d.tipo && window.resolverTipoEnJerarquia) window.resolverTipoEnJerarquia(d.tipo, baseId); calcIncidencia(baseId, pId, t.id, item.id); }, 50); }
                     else if (item.type === 'injustificada') { const baseId = `inj_${pId}_${t.id}`; setTimeout(() => { const dsc = document.getElementById(baseId+'_desc'); if(dsc) dsc.value = item.desc; const mej = document.getElementById(baseId+'_mejora'); if(mej) mej.value = item.mejora || ''; const emp = document.getElementById(baseId+'_empresa_sel'); if(emp) { emp.value = (appData.config.lists.empresas.includes(item.empresa) || !item.empresa) ? item.empresa : 'Otros'; if(window.checkEmpresaOtros) checkEmpresaOtros(baseId); } const empOtro = document.getElementById(baseId+'_empresa_otro'); if(empOtro && emp && emp.value === 'Otros') empOtro.value = item.empresa; const tp = document.getElementById(baseId+'_tipo'); if(tp) tp.value = item.tipo || ''; }, 50); }
                     else if (item.type === 'justificada') { const baseId = `just_${pId}_${item.id}`; const d = item._oldData; setTimeout(() => { const s = document.getElementById(baseId+'_start'); if(s) s.value = d.start; const e = document.getElementById(baseId+'_end'); if(e) e.value = d.end; const dsc = document.getElementById(baseId+'_desc'); if(dsc) dsc.value = d.desc; calcIncidencia(baseId, pId, t.id, item.id); }, 50); }
                 }); });
@@ -5484,7 +5558,7 @@ ${texTablaExcesos}
             const draft = currentDraft.permisos[pi]; document.getElementById(`p_num_${draft.id}`).value = p.numero; document.getElementById(`p_tipo_${draft.id}`).value = p.tipo; if(document.getElementById(`p_planta_${draft.id}`)) document.getElementById(`p_planta_${draft.id}`).value = p.planta || ''; if(document.getElementById(`p_esp_${draft.id}`)) document.getElementById(`p_esp_${draft.id}`).value = p.especialidad || '';
             permitTasksDef.forEach(t => { draft.sections[t.id].forEach(item => {
                 if (item.type === 'row') { const bid = `p_${draft.id}_${t.id}_${item.id}`; const d = item._oldData; setTimeout(() => { const s = document.getElementById(bid+'_start'); if(s) s.value = d.start; const e = document.getElementById(bid+'_end'); if(e) e.value = d.end; const i = document.getElementById(bid+'_inc'); if(i) i.value = d.incidencia; calcRowSilent(bid, t.timeKey, draft.id, t.id); }, 50); }
-                else if (item.type === 'incidencia') { const baseId = `inc_${draft.id}_${item.id}`; const d = item._oldData; setTimeout(() => { const s = document.getElementById(baseId+'_start'); if(s) s.value = d.start; const e = document.getElementById(baseId+'_end'); if(e) e.value = d.end; const tp = document.getElementById(baseId+'_tipo'); if(tp) tp.value = d.tipo; const dsc = document.getElementById(baseId+'_desc'); if(dsc) dsc.value = d.desc; const mej = document.getElementById(baseId+'_mejora'); if(mej) mej.value = d.mejora || ''; const emp = document.getElementById(baseId+'_empresa_sel'); if(emp) { emp.value = (appData.config.lists.empresas.includes(d.empresa) || !d.empresa) ? d.empresa : 'Otros'; if(window.checkEmpresaOtros) checkEmpresaOtros(baseId); } const empOtro = document.getElementById(baseId+'_empresa_otro'); if(empOtro && emp && emp.value === 'Otros') empOtro.value = d.empresa; calcIncidencia(baseId, draft.id, t.id, item.id); }, 50); }
+                else if (item.type === 'incidencia') { const baseId = `inc_${draft.id}_${item.id}`; const d = item._oldData; setTimeout(() => { const s = document.getElementById(baseId+'_start'); if(s) s.value = d.start; const e = document.getElementById(baseId+'_end'); if(e) e.value = d.end; const tp = document.getElementById(baseId+'_tipo'); if(tp) tp.value = d.tipo; const dsc = document.getElementById(baseId+'_desc'); if(dsc) dsc.value = d.desc; const mej = document.getElementById(baseId+'_mejora'); if(mej) mej.value = d.mejora || ''; const emp = document.getElementById(baseId+'_empresa_sel'); if(emp) { emp.value = (appData.config.lists.empresas.includes(d.empresa) || !d.empresa) ? d.empresa : 'Otros'; if(window.checkEmpresaOtros) checkEmpresaOtros(baseId); } const empOtro = document.getElementById(baseId+'_empresa_otro'); if(empOtro && emp && emp.value === 'Otros') empOtro.value = d.empresa; if(d.tipo && window.resolverTipoEnJerarquia) window.resolverTipoEnJerarquia(d.tipo, baseId); calcIncidencia(baseId, draft.id, t.id, item.id); }, 50); }
                 else if (item.type === 'injustificada') { const baseId = `inj_${draft.id}_${t.id}`; setTimeout(() => { const dsc = document.getElementById(baseId+'_desc'); if(dsc) dsc.value = item.desc; const mej = document.getElementById(baseId+'_mejora'); if(mej) mej.value = item.mejora || ''; const emp = document.getElementById(baseId+'_empresa_sel'); if(emp) { emp.value = (appData.config.lists.empresas.includes(item.empresa) || !item.empresa) ? item.empresa : 'Otros'; if(window.checkEmpresaOtros) checkEmpresaOtros(baseId); } const empOtro = document.getElementById(baseId+'_empresa_otro'); if(empOtro && emp && emp.value === 'Otros') empOtro.value = item.empresa; const tp = document.getElementById(baseId+'_tipo'); if(tp) tp.value = item.tipo || ''; }, 50); }
                 else if (item.type === 'justificada') { const baseId = `just_${draft.id}_${item.id}`; const d = item._oldData; setTimeout(() => { const s = document.getElementById(baseId+'_start'); if(s) s.value = d.start; const e = document.getElementById(baseId+'_end'); if(e) e.value = d.end; const dsc = document.getElementById(baseId+'_desc'); if(dsc) dsc.value = d.desc; calcIncidencia(baseId, draft.id, t.id, item.id); }, 50); }
             }); });
