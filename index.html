@@ -19,6 +19,23 @@
         .btn-clear-time { color: #cbd5e1; cursor: pointer; transition: all 0.2s; font-size: 14px; flex-shrink: 0; padding: 2px; }
         .btn-clear-time:hover { color: #ef4444; transform: scale(1.1); }
         input[type="time"] { min-width: 95px; flex-grow: 1; }
+
+        /* ===== Ajustes responsive para móvil ===== */
+        @media (max-width: 768px) {
+            #main-content { padding: 12px !important; }
+            #searchData { width: 100% !important; }
+            /* Barras de herramientas que pueden desbordar: permitir envolver */
+            .toolbar-wrap { flex-wrap: wrap !important; gap: 8px !important; row-gap: 8px !important; }
+            /* Modales a casi todo el ancho y con padding reducido */
+            #chart-modal > div, #global-chart-modal > div,
+            #modal-presentacion > div, #excel-modal > div, #chart-modal .max-w-5xl,
+            .fixed > .max-w-7xl, .fixed > .max-w-5xl, .fixed > .max-w-4xl {
+                max-width: 100% !important;
+            }
+            #chart-modal .p-6, #global-chart-modal .p-6 { padding: 14px !important; }
+            /* Botones de acción algo más compactos */
+            .nav-btn { padding: 0.45rem 0.7rem !important; }
+        }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -74,7 +91,9 @@
                         <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">FECHA</label><input type="date" id="fecha" onchange="actualizarDia()" required="" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></div>
                         <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">DÍA</label><input type="text" id="diaSemana" readonly="" class="w-full border rounded p-2 text-sm bg-slate-50 text-slate-500 outline-none font-semibold"></div>
                     <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">AUDITOR</label><input type="text" id="auditor" required="" placeholder="Nombre..." class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">SITE / UBICACIÓN</label><select id="site" required="" class="w-full border rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"></select></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">SITE / UBICACIÓN</label><select id="site" required="" onchange="sincronizarPlantaDiaOpciones()" class="w-full border rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"></select></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">ESPECIALIDAD DEL DÍA</label><select id="especialidadDia" class="w-full border rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"><option value="">-- Sin especificar --</option><option value="Mecánicos">Mecánicos</option><option value="Tuberos">Tuberos</option><option value="Instrumentistas">Instrumentistas</option><option value="Eléctricos">Eléctricos</option></select></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">PLANTA DEL DÍA</label><div class="flex gap-1"><select id="plantaDia" onchange="aplicarPlantaDiaAPermisos()" class="w-full border rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"><option value="">-- Sin especificar --</option></select><button type="button" onclick="aplicarPlantaDiaAPermisos()" title="Aplicar a todos los permisos" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 rounded text-xs font-bold transition whitespace-nowrap"><i class="fas fa-arrow-down"></i></button></div></div>
                         <!-- [PATCHER V10.6] Input Empresa Responsable Removido -->
 <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">SUPERVISOR</label><input type="text" id="supervisor" required="" placeholder="Nombre..." class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></div>
                         <div>
@@ -148,10 +167,10 @@
 
         <div id="dataTab" class="tab-content hidden h-full flex flex-col overflow-hidden">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
-                <div class="bg-slate-100 border-b px-5 py-3 flex justify-between items-center shrink-0">
-                    <div class="flex items-center gap-6">
+                <div class="bg-slate-100 border-b px-5 py-3 flex justify-between items-center shrink-0 toolbar-wrap">
+                    <div class="flex items-center gap-6 toolbar-wrap">
                         <h2 class="text-xl font-bold text-slate-800">Base de Datos</h2>
-                        
+
                         <div id="prod-summary" class="flex gap-4 text-[11px] font-bold"></div>
                         <button onclick="mostrarTendenciasGlobales()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2 shadow-sm ml-4">
                             <i class="fas fa-chart-area"></i> Ver Tendencias Globales
@@ -160,7 +179,7 @@
                     <span class="text-xs text-slate-500 font-bold">Total: <span id="total-registros">0</span></span>
                 </div>
                 <div class="p-3 bg-white border-b shrink-0 flex gap-4">
-                    <input type="text" id="searchData" placeholder="Filtrar por Site o Supervisor..." class="border rounded p-2 text-xs w-80 outline-none" onkeyup="renderDataTable()">
+                    <input type="text" id="searchData" placeholder="Filtrar por Site o Supervisor..." class="border rounded p-2 text-xs w-full sm:w-80 outline-none" onkeyup="renderDataTable()">
                 </div>
                 <div class="flex-1 overflow-auto">
                     <table class="w-full text-left text-[10px] whitespace-nowrap">
@@ -191,6 +210,19 @@
                         <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">SITIOS</label><textarea id="conf-sites" class="w-full border rounded p-2 text-sm h-24 outline-none focus:ring-2 focus:ring-indigo-500"></textarea></div>
                         <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">TIPOS PERMISO</label><textarea id="conf-tipos" class="w-full border rounded p-2 text-sm h-24 outline-none focus:ring-2 focus:ring-indigo-500"></textarea></div>
                     </div>
+                    <div class="pt-4 border-t">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest"><i class="fas fa-layer-group text-indigo-500 mr-1"></i> Modelos de tiempos permisibles</label>
+                        <p class="text-[10px] text-slate-400 mb-3">Guarda la configuración de tiempos actual como un modelo con nombre y aplícalo cuando quieras. Al aplicar un modelo, todos los registros se recalculan con esos tiempos.</p>
+                        <div class="flex flex-wrap items-end gap-2 mb-3">
+                            <div class="flex-1 min-w-[200px]"><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nombre del modelo</label><input type="text" id="nuevo-modelo-tiempos" placeholder="Ej: Verano 2026" class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></div>
+                            <button type="button" onclick="guardarModeloTiempos()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded font-bold text-sm transition shadow-sm"><i class="fas fa-save mr-1"></i> Guardar modelo</button>
+                        </div>
+                        <div class="flex flex-wrap items-end gap-2">
+                            <div class="flex-1 min-w-[200px]"><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Modelos guardados</label><select id="select-modelo-tiempos" class="w-full border rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"></select></div>
+                            <button type="button" onclick="aplicarModeloTiempos()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-bold text-sm transition shadow-sm"><i class="fas fa-check-double mr-1"></i> Aplicar y recalcular</button>
+                            <button type="button" onclick="eliminarModeloTiempos()" title="Eliminar modelo seleccionado" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded font-bold text-sm transition"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
                     <div class="pt-4 border-t flex justify-end"><button onclick="aplicarConfiguracionManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded font-bold transition shadow-md">Aplicar Cambios</button></div>
                 </div>
             </div>
@@ -211,8 +243,8 @@
                         </div>
                     </div>
                 </div>
-                
-    
+
+
                 <!-- MODAL TENDENCIAS GLOBALES INYECTADO -->
                 <div id="global-chart-modal" class="fixed inset-0 bg-slate-900/95 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
                     <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-7xl flex flex-col max-h-[95vh] overflow-y-auto fade-in relative">
@@ -381,8 +413,9 @@
             audits: [],
             config: {
                 times: { distribucion: 30, finJornada: 10, charla: 5, firmaAut: 15, firmaEC: 10, firmaSE: 10, firmaComp: 10, cierre: 10 },
+                timeTemplates: [],
                 lists: { 
-                    sites: ["QUÍMICA", "ENERGY PARK", "EXTERIOR"], 
+                    sites: ["QUÍMICA", "ENERGY PARK", "EXTERIOR", "PESR"],
                     tiposPermiso: ["FRÍO", "CALIENTE", "ELÉCTRICO"],
                     especialidades: ["Estática", "Dinámica", "Instrumentación", "Electricidad"],
                     plantas: ["CBL", "FCC", "ENE", "EN2", "PQ", "RNL", "APN", "APS", "PTN", "MYM", "C2"],
@@ -731,11 +764,13 @@
             } 
         }
         
-        function agregarPermiso() { 
-            const pid = getUniqueId(); const s = {}; 
-            permitTasksDef.forEach(t => s[t.id] = [{ type: 'row', id: getUniqueId() }]); 
-            currentDraft.permisos.push({id: pid, sections: s}); 
-            renderPermits(); 
+        function agregarPermiso() {
+            const pid = getUniqueId(); const s = {};
+            permitTasksDef.forEach(t => s[t.id] = [{ type: 'row', id: getUniqueId() }]);
+            currentDraft.permisos.push({id: pid, sections: s});
+            renderPermits();
+            // El permiso nuevo hereda por defecto la "Planta del día" si está definida (editable luego).
+            setTimeout(() => aplicarPlantaDiaAUnPermiso(pid), 60);
         }
         function eliminarPermiso(pid) { if(currentDraft.permisos.length > 1){ currentDraft.permisos = currentDraft.permisos.filter(x => x.id !== pid); renderPermits(); setTimeout(recalcDistribucionInterval, 50); } }
         
@@ -806,8 +841,92 @@
 
         function aplicarListasADesplegables() {
             const sEl = document.getElementById('site');
-            sEl.innerHTML = '<option value="" disabled selected>Seleccione SITE...</option>' + appData.config.lists.sites.map(x => `<option value="${x}">${x}</option>`).join('');
+            // Sites que deben existir siempre (aunque un JSON antiguo no los incluya en su config).
+            const sitesRequeridos = ["QUÍMICA", "ENERGY PARK", "EXTERIOR", "PESR"];
+            let sites = (appData.config.lists.sites || []).slice();
+            sitesRequeridos.forEach(s => { if (sites.indexOf(s) === -1) sites.push(s); });
+            sEl.innerHTML = '<option value="" disabled selected>Seleccione SITE...</option>' + sites.map(x => `<option value="${x}">${x}</option>`).join('');
+            sincronizarPlantaDiaOpciones();
         }
+
+        // Rellena las opciones del selector "Planta del día" según el Site elegido (mismo criterio
+        // que las plantas por permiso), conservando el valor seleccionado si sigue siendo válido.
+        function sincronizarPlantaDiaOpciones() {
+            const sel = document.getElementById('plantaDia');
+            if (!sel) return;
+            const prev = sel.value || '';
+            const lista = (window.v79_plantasList ? window.v79_plantasList() : (appData.config.lists.plantas || []));
+            let html = '<option value="">-- Sin especificar --</option>';
+            lista.forEach(p => { html += '<option value="' + p + '"' + (p === prev ? ' selected' : '') + '>' + p + '</option>'; });
+            if (prev && lista.indexOf(prev) === -1) html += '<option value="' + prev + '" selected>' + prev + '</option>';
+            sel.innerHTML = html;
+        }
+
+        // Aplica la "Planta del día" como valor por defecto a TODOS los permisos actuales (editable luego en cada uno).
+        function aplicarPlantaDiaAPermisos() {
+            const val = (document.getElementById('plantaDia') || {}).value || '';
+            if (!val) return;
+            (currentDraft.permisos || []).forEach(p => aplicarPlantaDiaAUnPermiso(p.id, val));
+        }
+
+        function aplicarPlantaDiaAUnPermiso(pid, val) {
+            val = val || ((document.getElementById('plantaDia') || {}).value || '');
+            if (!val) return;
+            const sel = document.getElementById('p_planta_' + pid);
+            if (!sel) return;
+            // Asegura que la opción exista antes de seleccionarla.
+            let existe = false;
+            for (let i = 0; i < sel.options.length; i++) { if (sel.options[i].value === val) { existe = true; break; } }
+            if (!existe) { const o = document.createElement('option'); o.value = val; o.text = val; sel.appendChild(o); }
+            sel.value = val;
+        }
+
+        // Incorpora un JSON importado (manual o por P2P en la APK). Si ya hay datos cargados,
+        // pregunta si INCORPORAR como datos independientes (sin pisar) o REEMPLAZAR todo.
+        // opts.forceMode: 'merge' | 'replace' para saltar la pregunta.
+        window.incorporarDatos = function(d, opts) {
+            opts = opts || {};
+            if (!d || !Array.isArray(d.audits)) { if (window.showToast) showToast('JSON sin auditorías reconocibles', 'error'); return false; }
+            var tiene = appData && Array.isArray(appData.audits) && appData.audits.length > 0;
+            var modo;
+            if (!tiene) modo = 'replace';
+            else if (opts.forceMode) modo = opts.forceMode;
+            else modo = confirm('Ya tienes ' + appData.audits.length + ' registro(s) cargados.\n\nAceptar = INCORPORAR los ' + d.audits.length + ' nuevos como datos independientes (sin pisar los actuales).\nCancelar = REEMPLAZAR todo por los nuevos.') ? 'merge' : 'replace';
+
+            if (modo === 'replace') {
+                appData = d;
+            } else {
+                if (!appData.config) appData.config = d.config || { times: {}, lists: {} };
+                if (!Array.isArray(appData.audits)) appData.audits = [];
+                var idsExist = {};
+                appData.audits.forEach(function(a) { if (a && a.id) idsExist[a.id] = true; });
+                (d.audits || []).forEach(function(a) {
+                    if (!a) return;
+                    if (!a.id || idsExist[a.id]) { a.id = (typeof getUniqueId === 'function' ? getUniqueId() : (Date.now().toString(36) + Math.random().toString(36).slice(2, 7))); }
+                    idsExist[a.id] = true;
+                    appData.audits.push(a);
+                });
+                try {
+                    var el = appData.config.lists || (appData.config.lists = {});
+                    var il = (d.config && d.config.lists) || {};
+                    ['sites', 'tiposPermiso', 'especialidades', 'plantas', 'empresas'].forEach(function(k) {
+                        if (Array.isArray(il[k])) { if (!Array.isArray(el[k])) el[k] = []; il[k].forEach(function(v) { if (el[k].indexOf(v) === -1) el[k].push(v); }); }
+                    });
+                    if (d.config && Array.isArray(d.config.timeTemplates)) {
+                        if (!Array.isArray(appData.config.timeTemplates)) appData.config.timeTemplates = [];
+                        d.config.timeTemplates.forEach(function(t) { if (t && t.name && !appData.config.timeTemplates.some(function(x) { return x.name === t.name; })) appData.config.timeTemplates.push(t); });
+                    }
+                    if (Array.isArray(d.controlAcciones)) { if (!Array.isArray(appData.controlAcciones)) appData.controlAcciones = []; appData.controlAcciones = appData.controlAcciones.concat(d.controlAcciones); }
+                } catch (e) { console.error('merge config', e); }
+            }
+            if (typeof renderDataTable === 'function') renderDataTable();
+            if (typeof renderConfigFields === 'function') renderConfigFields();
+            if (typeof aplicarListasADesplegables === 'function') aplicarListasADesplegables();
+            try { refreshAllMaxLabels(); } catch (_) {}
+            try { refreshAllRowStates(); } catch (_) {}
+            if (window.showToast) showToast(modo === 'merge' ? ('Incorporados ' + d.audits.length + ' registro(s) como datos independientes') : 'Importado con éxito (reemplazo total)', 'success');
+            return true;
+        };
 
         function guardarAuditoria(e) {
             e.preventDefault(); if(!currentDraft.ejecutantes.length) return showToast("Añade ejecutantes.", "error");
@@ -1265,7 +1384,97 @@
             c.innerHTML = Object.keys(appData.config.times).map(k => `<div class="flex justify-between items-center bg-slate-50 p-2 rounded border"><span class="text-[10px] font-bold uppercase text-slate-500">${k}</span><div class="flex items-center gap-1"><input type="number" id="conf_time_${k}" value="${appData.config.times[k]}" class="w-16 border rounded text-center font-bold text-sm"><span class="text-[9px] text-slate-400">min</span></div></div>`).join('');
             document.getElementById('conf-sites').value = appData.config.lists.sites.join(', ');
             document.getElementById('conf-tipos').value = appData.config.lists.tiposPermiso.join(', ');
+            renderTimeTemplates();
         }
+
+        // ---------- Modelos / plantillas de tiempos permisibles ----------
+        function ensureTimeTemplates() {
+            if (!appData.config.timeTemplates || !Array.isArray(appData.config.timeTemplates)) appData.config.timeTemplates = [];
+            return appData.config.timeTemplates;
+        }
+
+        function renderTimeTemplates() {
+            const sel = document.getElementById('select-modelo-tiempos');
+            if (!sel) return;
+            const tpls = ensureTimeTemplates();
+            if (!tpls.length) { sel.innerHTML = '<option value="">(No hay modelos guardados)</option>'; return; }
+            sel.innerHTML = tpls.map((t, i) => `<option value="${i}">${t.name}</option>`).join('');
+        }
+
+        function guardarModeloTiempos() {
+            const nombreEl = document.getElementById('nuevo-modelo-tiempos');
+            const nombre = (nombreEl && nombreEl.value || '').trim();
+            if (!nombre) return showToast("Escribe un nombre para el modelo", "error");
+            // Snapshot de los valores actuales de los campos de tiempos (lo que el usuario ve/edita).
+            const snap = {};
+            Object.keys(appData.config.times).forEach(k => { const v = parseInt(document.getElementById('conf_time_' + k)?.value); snap[k] = isNaN(v) ? appData.config.times[k] : v; });
+            const tpls = ensureTimeTemplates();
+            const existente = tpls.find(t => t.name.toLowerCase() === nombre.toLowerCase());
+            if (existente) { existente.times = snap; showToast('Modelo "' + nombre + '" actualizado', "success"); }
+            else { tpls.push({ id: getUniqueId(), name: nombre, times: snap }); showToast('Modelo "' + nombre + '" guardado', "success"); }
+            if (nombreEl) nombreEl.value = '';
+            renderTimeTemplates();
+        }
+
+        function aplicarModeloTiempos() {
+            const sel = document.getElementById('select-modelo-tiempos');
+            const tpls = ensureTimeTemplates();
+            const idx = parseInt(sel && sel.value);
+            if (isNaN(idx) || !tpls[idx]) return showToast("Selecciona un modelo guardado", "error");
+            const t = tpls[idx];
+            // Sustituye las claves existentes y añade las que el modelo tenga de más.
+            Object.keys(appData.config.times).forEach(k => { const v = parseInt(t.times[k]); if (!isNaN(v)) appData.config.times[k] = v; });
+            Object.keys(t.times).forEach(k => { if (appData.config.times[k] === undefined) { const v = parseInt(t.times[k]); if (!isNaN(v)) appData.config.times[k] = v; } });
+            renderConfigFields();
+            recalcViewsPorTiempos();
+            showToast('Modelo "' + t.name + '" aplicado. Registros recalculados.', "success");
+        }
+
+        function eliminarModeloTiempos() {
+            const sel = document.getElementById('select-modelo-tiempos');
+            const tpls = ensureTimeTemplates();
+            const idx = parseInt(sel && sel.value);
+            if (isNaN(idx) || !tpls[idx]) return;
+            const nombre = tpls[idx].name;
+            tpls.splice(idx, 1);
+            renderTimeTemplates();
+            showToast('Modelo "' + nombre + '" eliminado', "info");
+        }
+
+        // Refresca las vistas que dependen de los tiempos permisibles tras aplicar un modelo.
+        function recalcViewsPorTiempos() {
+            try { if (typeof renderDataTable === 'function') renderDataTable(); } catch (e) {}
+            try { if (typeof recalcDistribucionInterval === 'function') recalcDistribucionInterval(); } catch (e) {}
+            try { if (typeof recalcularCadena === 'function') recalcularCadena(); } catch (e) {}
+            try { if (document.getElementById('filter-global-tipo') && typeof updateGlobalCharts === 'function') updateGlobalCharts(); } catch (e) {}
+        }
+
+        // ---------- Mapeo de tipología de incidencias (jerarquía) ----------
+        // Devuelve la tipología PRINCIPAL (nivel 1, "cat") de un tipo almacenado,
+        // que puede ser "cat", "sub", "cat > sub" o el texto del ítem (nivel 3).
+        function tipoToGeneral(tipo) {
+            if (!tipo) return 'Sin tipificar';
+            if (tipo.indexOf(' > ') !== -1) return tipo.split(' > ')[0];
+            for (var ci = 0; ci < INC_JERARQUIA.length; ci++) {
+                var c = INC_JERARQUIA[ci];
+                if (c.cat === tipo) return c.cat;
+                for (var si = 0; si < (c.subs || []).length; si++) {
+                    var s = c.subs[si];
+                    if (s.sub === tipo) return c.cat;
+                    if (s.items && s.items.indexOf(tipo) !== -1) return c.cat;
+                }
+            }
+            return tipo; // sin match en la jerarquía: devolver el propio texto
+        }
+
+        // Devuelve la incidencia más PARTICULAR (nivel más específico) de un tipo almacenado.
+        function tipoToParticular(tipo) {
+            if (!tipo) return 'Sin tipificar';
+            if (tipo.indexOf(' > ') !== -1) { var parts = tipo.split(' > '); return parts[parts.length - 1]; }
+            return tipo;
+        }
+
+        window.tipoToGeneral = tipoToGeneral; window.tipoToParticular = tipoToParticular;
 
         function aplicarConfiguracionManual() {
             Object.keys(appData.config.times).forEach(k => { const v = parseInt(document.getElementById('conf_time_'+k)?.value); if(!isNaN(v)) appData.config.times[k] = v; });
@@ -2270,7 +2479,7 @@ ${tableImprod}\\midrule
     window.cargarParaEditar = function(id) {
         const a = appData.audits.find(x => x.id === id); if(!a) return;
         editingAuditId = id; document.getElementById('edit-badge').classList.remove('hidden'); document.getElementById('btn-cancel-edit').classList.remove('hidden'); document.getElementById('submit-text').innerText = "Actualizar Auditoría Diaria"; switchTab('auditTab');
-        document.getElementById('fecha').value = a.fecha; document.getElementById('diaSemana').value = a.diaSemana || ''; document.getElementById('site').value = a.site; document.getElementById('supervisor').value = a.supervisor; if(document.getElementById('empresaResponsable')) document.getElementById('empresaResponsable').value = a.empresaResponsable || ''; document.getElementById('auditor').value = a.auditor || '';
+        document.getElementById('fecha').value = a.fecha; document.getElementById('diaSemana').value = a.diaSemana || ''; document.getElementById('site').value = a.site; if(typeof sincronizarPlantaDiaOpciones==='function') sincronizarPlantaDiaOpciones(); if(document.getElementById('especialidadDia')) document.getElementById('especialidadDia').value = a.especialidadDia || ''; if(document.getElementById('plantaDia')) document.getElementById('plantaDia').value = a.plantaDia || ''; document.getElementById('supervisor').value = a.supervisor; if(document.getElementById('empresaResponsable')) document.getElementById('empresaResponsable').value = a.empresaResponsable || ''; document.getElementById('auditor').value = a.auditor || '';
         currentDraft.ejecutantes = [...(a.ejecutantes || [])]; renderEjecutantes();
         
         initialTasksDef.forEach(t => {
@@ -2556,7 +2765,7 @@ ${tableImprod}\\midrule
     window.cargarParaEditar = function(id) {
         const a = appData.audits.find(x => x.id === id); if(!a) return;
         editingAuditId = id; document.getElementById('edit-badge').classList.remove('hidden'); document.getElementById('btn-cancel-edit').classList.remove('hidden'); document.getElementById('submit-text').innerText = "Actualizar Auditoría Diaria"; switchTab('auditTab');
-        document.getElementById('fecha').value = a.fecha; document.getElementById('diaSemana').value = a.diaSemana || ''; document.getElementById('site').value = a.site; document.getElementById('supervisor').value = a.supervisor; if(document.getElementById('empresaResponsable')) document.getElementById('empresaResponsable').value = a.empresaResponsable || ''; document.getElementById('auditor').value = a.auditor || '';
+        document.getElementById('fecha').value = a.fecha; document.getElementById('diaSemana').value = a.diaSemana || ''; document.getElementById('site').value = a.site; if(typeof sincronizarPlantaDiaOpciones==='function') sincronizarPlantaDiaOpciones(); if(document.getElementById('especialidadDia')) document.getElementById('especialidadDia').value = a.especialidadDia || ''; if(document.getElementById('plantaDia')) document.getElementById('plantaDia').value = a.plantaDia || ''; document.getElementById('supervisor').value = a.supervisor; if(document.getElementById('empresaResponsable')) document.getElementById('empresaResponsable').value = a.empresaResponsable || ''; document.getElementById('auditor').value = a.auditor || '';
         currentDraft.ejecutantes = [...(a.ejecutantes || [])]; renderEjecutantes();
         
         initialTasksDef.forEach(t => {
@@ -4853,7 +5062,11 @@ ${texTablaExcesos}
 
         setTimeout(function() {
             poblarCat(baseId, '');
-            if (inc.tipo) resolverTipoEnJerarquia(inc.tipo, baseId);
+            // Fix: al re-renderizar (p.ej. al añadir otra incidencia) el modelo del borrador
+            // no tiene inc.tipo, pero restoreSavedValues sí preserva el input oculto _tipo.
+            // Resolvemos los desplegables desde ese valor preservado para no "perder" la clasificación.
+            var tipoActual = inc.tipo || (document.getElementById(baseId + '_tipo') ? document.getElementById(baseId + '_tipo').value : '');
+            if (tipoActual) resolverTipoEnJerarquia(tipoActual, baseId);
         }, 50);
 
         return html;
@@ -4910,7 +5123,9 @@ ${texTablaExcesos}
 
         setTimeout(function() {
             poblarCat(baseId, '');
-            if (inj.tipo) resolverTipoEnJerarquia(inj.tipo, baseId);
+            // Fix: preservar la clasificación desde el input oculto _tipo tras re-render.
+            var tipoActual = inj.tipo || (document.getElementById(baseId + '_tipo') ? document.getElementById(baseId + '_tipo').value : '');
+            if (tipoActual) resolverTipoEnJerarquia(tipoActual, baseId);
         }, 50);
 
         return html;
@@ -5082,7 +5297,7 @@ ${texTablaExcesos}
     window.cargarParaEditar = function(id) {
         const a = appData.audits.find(x => x.id === id); if(!a) return;
         editingAuditId = id; document.getElementById('edit-badge').classList.remove('hidden'); document.getElementById('btn-cancel-edit').classList.remove('hidden'); document.getElementById('submit-text').innerText = "Actualizar Auditoría Diaria"; switchTab('auditTab');
-        document.getElementById('fecha').value = a.fecha; document.getElementById('diaSemana').value = a.diaSemana || ''; document.getElementById('site').value = a.site; document.getElementById('supervisor').value = a.supervisor; if(document.getElementById('empresaResponsable')) document.getElementById('empresaResponsable').value = a.empresaResponsable || ''; document.getElementById('auditor').value = a.auditor || '';
+        document.getElementById('fecha').value = a.fecha; document.getElementById('diaSemana').value = a.diaSemana || ''; document.getElementById('site').value = a.site; if(typeof sincronizarPlantaDiaOpciones==='function') sincronizarPlantaDiaOpciones(); if(document.getElementById('especialidadDia')) document.getElementById('especialidadDia').value = a.especialidadDia || ''; if(document.getElementById('plantaDia')) document.getElementById('plantaDia').value = a.plantaDia || ''; document.getElementById('supervisor').value = a.supervisor; if(document.getElementById('empresaResponsable')) document.getElementById('empresaResponsable').value = a.empresaResponsable || ''; document.getElementById('auditor').value = a.auditor || '';
         currentDraft.ejecutantes = [...(a.ejecutantes || [])]; renderEjecutantes();
         
         const loadSection = (defs, aTasks, aIncs, draftSection) => {
@@ -5490,7 +5705,7 @@ ${texTablaExcesos}
     window.guardarAuditoria = function(e) {
         e.preventDefault(); if(!currentDraft.ejecutantes.length) return showToast("Añade ejecutantes.", "error");
         try {
-            const audit = { id: editingAuditId || getUniqueId(), fecha: document.getElementById('fecha').value, diaSemana: document.getElementById('diaSemana').value, site: document.getElementById('site').value, empresaResponsable: document.getElementById('empresaResponsable')?.value || '', auditor: document.getElementById('auditor').value, supervisor: document.getElementById('supervisor').value, ejecutantes: [...currentDraft.ejecutantes], tareasIniciales: {}, tareasCierre: {}, permisosData: [] };
+            const audit = { id: editingAuditId || getUniqueId(), fecha: document.getElementById('fecha').value, diaSemana: document.getElementById('diaSemana').value, site: document.getElementById('site').value, especialidadDia: document.getElementById('especialidadDia')?.value || '', plantaDia: document.getElementById('plantaDia')?.value || '', empresaResponsable: document.getElementById('empresaResponsable')?.value || '', auditor: document.getElementById('auditor').value, supervisor: document.getElementById('supervisor').value, ejecutantes: [...currentDraft.ejecutantes], tareasIniciales: {}, tareasCierre: {}, permisosData: [] };
             audit.incidenciasInicio = []; audit.incidenciasCierre = [];
             extractSectionV14(initialTasksDef, currentDraft.initialTasks, audit.tareasIniciales, audit.incidenciasInicio, 'INITIAL_SECTION');
             extractSectionV14(cierreTasksDef, currentDraft.cierreTasks, audit.tareasCierre, audit.incidenciasCierre, 'CIERRE_SECTION');
@@ -5515,7 +5730,7 @@ ${texTablaExcesos}
     window.cargarParaEditar = function(id) {
         const a = appData.audits.find(x => x.id === id); if(!a) return;
         editingAuditId = id; document.getElementById('edit-badge').classList.remove('hidden'); document.getElementById('btn-cancel-edit').classList.remove('hidden'); document.getElementById('submit-text').innerText = "Actualizar Auditoría Diaria"; switchTab('auditTab');
-        document.getElementById('fecha').value = a.fecha; document.getElementById('diaSemana').value = a.diaSemana || ''; document.getElementById('site').value = a.site; document.getElementById('supervisor').value = a.supervisor; if(document.getElementById('empresaResponsable')) document.getElementById('empresaResponsable').value = a.empresaResponsable || ''; document.getElementById('auditor').value = a.auditor || '';
+        document.getElementById('fecha').value = a.fecha; document.getElementById('diaSemana').value = a.diaSemana || ''; document.getElementById('site').value = a.site; if(typeof sincronizarPlantaDiaOpciones==='function') sincronizarPlantaDiaOpciones(); if(document.getElementById('especialidadDia')) document.getElementById('especialidadDia').value = a.especialidadDia || ''; if(document.getElementById('plantaDia')) document.getElementById('plantaDia').value = a.plantaDia || ''; document.getElementById('supervisor').value = a.supervisor; if(document.getElementById('empresaResponsable')) document.getElementById('empresaResponsable').value = a.empresaResponsable || ''; document.getElementById('auditor').value = a.auditor || '';
         currentDraft.ejecutantes = [...(a.ejecutantes || [])]; renderEjecutantes();
         
         const loadSectionV14 = (defs, aTasks, aIncs, draftSection) => {
@@ -6496,10 +6711,10 @@ ${texTablaCierre}
         };
 
         const selNode = document.getElementById('sel-permiso-v35');
-        const newSelNode = selNode.cloneNode(true); 
+        const newSelNode = selNode.cloneNode(true);
         selNode.parentNode.replaceChild(newSelNode, selNode);
         newSelNode.addEventListener('change', updateView);
-        
+
         updateView();
     };
 })();
@@ -7761,6 +7976,67 @@ ${texTablaExcesos}
     };
 
     // ===========================================================
+    // OVERRIDE CONSOLIDADO DE LA PRESENTACIÓN (inyectado en el HTML generado)
+    //   · Cascada del día: SIN K y por incidencia particular (tipo más específico).
+    //   · Promedio general: por TIPOLOGÍA GENERAL (nivel 1) y SIN K.
+    //   · Ocultar puntos (clic derecho en la 1ª gráfica) con persistencia local.
+    //   Afecta también al PDF (usa _cascadaConfig / _promedioGeneralConfigForPdf /
+    //   currentAuditsView, que quedan filtrados por los ocultos).
+    //   Se aplica en 'load' para prevalecer sobre las definiciones base.
+    // ===========================================================
+    var PRES_OVERRIDE_SCRIPT = '<scr' + 'ipt>' + [
+"(function(){",
+"  function apply(){ try{",
+"    if (typeof analizarAuditoria !== 'function') return;",
+"    var JER = (window.SNAPSHOT && SNAPSHOT.config && SNAPSHOT.config.lists && SNAPSHOT.config.lists.incidencias) || [];",
+"    function tGen(t){ if(!t) return 'Sin tipificar'; if(t.indexOf(' > ')!==-1) return t.split(' > ')[0];",
+"      for(var i=0;i<JER.length;i++){ var c=JER[i]; if(c.cat===t) return c.cat; var ss=c.subs||[];",
+"        for(var j=0;j<ss.length;j++){ var s=ss[j]; if(s.sub===t) return c.cat; if(s.items && s.items.indexOf(t)!==-1) return c.cat; } } return t; }",
+"    var _col=(typeof colorForTipo==='function')?colorForTipo:function(){return '#ef4444';};",
+"    var _fmt=(typeof formatMin==='function')?formatMin:function(x){return x+'m';};",
+"    var _CLK=(typeof TIPOS_CLICKEABLES!=='undefined')?TIPOS_CLICKEABLES:{};",
+"    window.abrirCascada=function(idx){ var a=currentAuditsView[idx]; if(!a) return; var m=analizarAuditoria(a);",
+"      var improds=Object.keys(m.incMap).map(function(k){return {tipo:k,valor:m.incMap[k]};}).sort(function(x,y){return y.valor-x.valor;});",
+"      var techo=m.total, labels=['Tiempo total'], data=[[0,techo]], colors=['#6366f1'], borders=['#1d4ed8'], bw=[1], clk=[false], tipoArr=[null], acum=0;",
+"      improds.forEach(function(it){ var b=techo-acum-it.valor, t=techo-acum; labels.push(it.tipo); data.push([b,t]); var c=!!_CLK[it.tipo]; clk.push(c); tipoArr.push(it.tipo); colors.push(_col(it.tipo)); borders.push(c?'#0f172a':'rgba(0,0,0,0.15)'); bw.push(c?3:1); acum+=it.valor; });",
+"      labels.push('Productivo'); data.push([0,m.p]); colors.push('#10b981'); borders.push('#047857'); bw.push(2); clk.push(false); tipoArr.push(null);",
+"      var tE=document.getElementById('cascada-title'); if(tE) tE.innerHTML='<i class=\\\"fas fa-water mr-2 text-indigo-500\\\"></i>Cascada (sin K) · '+(a.fecha||'')+(a.site?' · '+a.site:'');",
+"      var sE=document.getElementById('cascada-subtitle'); if(sE){ var pct=m.total>0?((m.p/m.total)*100).toFixed(1):'0.0'; var st=''; if(a.auditor) st+='Auditor: <strong>'+a.auditor+'</strong> · '; if(a.supervisor) st+='Supervisor: <strong>'+a.supervisor+'</strong> · '; st+='Productivo: <strong>'+_fmt(m.p)+' ('+pct+'%)</strong> · Improductivo: <strong>'+_fmt(m.i)+'</strong> · Total: <strong>'+_fmt(m.total)+'</strong>'; sE.innerHTML=st; }",
+"      var mc=document.getElementById('matrioska-container'); if(mc) mc.innerHTML='';",
+"      var modal=document.getElementById('modal-cascada'); if(modal){ modal.classList.remove('hidden'); modal.classList.add('flex'); }",
+"      if(window.chartCascada){ try{window.chartCascada.destroy();}catch(e){} }",
+"      window.chartCascada=new Chart(document.getElementById('chart-cascada').getContext('2d'),{ type:'bar', data:{labels:labels,datasets:[{label:'Minutos',data:data,backgroundColor:colors,borderColor:borders,borderWidth:bw,borderSkipped:false}]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{ label:function(c){ var v=c.raw; var d=Array.isArray(v)?(v[1]-v[0]):v; var tl=(c.chart.data.datasets[0].data[0]&&Array.isArray(c.chart.data.datasets[0].data[0]))?c.chart.data.datasets[0].data[0][1]:0; var p=tl>0?((d/tl)*100).toFixed(1)+'%':'0%'; return 'Duración: '+_fmt(d)+' · '+p+(clk[c.dataIndex]?' · (clic para detalle)':''); } }} }, scales:{x:{ticks:{font:{size:10},maxRotation:60,minRotation:30}},y:{beginAtZero:true,title:{display:true,text:'Minutos'}}}, onClick:function(e,els){ if(!els||!els.length) return; var i=els[0].index; if(clk[i] && typeof abrirMatrioska==='function') abrirMatrioska(tipoArr[i], a); } } }); };",
+"    window._cascadaConfig=function(audit){ var m=analizarAuditoria(audit); var improds=Object.keys(m.incMap).map(function(k){return {tipo:k,valor:m.incMap[k]};}).sort(function(x,y){return y.valor-x.valor;}); var techo=m.total, labels=['Tiempo total'], data=[[0,techo]], colors=['#6366f1'], borders=['#1d4ed8'], bw=[1], acum=0; improds.forEach(function(it){ var b=techo-acum-it.valor, t=techo-acum; labels.push(it.tipo); data.push([b,t]); colors.push(_col(it.tipo)); borders.push('rgba(0,0,0,0.3)'); bw.push(1); acum+=it.valor; }); labels.push('Productivo'); data.push([0,m.p]); colors.push('#10b981'); borders.push('#047857'); bw.push(2); return { config:{ type:'bar', data:{labels:labels,datasets:[{label:'Minutos',data:data,backgroundColor:colors,borderColor:borders,borderWidth:bw,borderSkipped:false}]}, options:{ plugins:{legend:{display:false}, title:{display:true,text:'Cascada (sin K) - '+(audit.fecha||'')+(audit.site?' - '+audit.site:''), font:{size:12,weight:'bold'}}}, scales:{x:{ticks:{font:{size:9},maxRotation:60,minRotation:30}},y:{beginAtZero:true,title:{display:true,text:'Minutos'}}} } }, hasData: improds.length>0 || m.p>0 }; };",
+"    function _promSinK(){ var av=currentAuditsView; if(!av.length) return null; var sP=0,sT=0,sI=0,n=av.length,g={}; av.forEach(function(a){ var m=analizarAuditoria(a); sP+=m.p; sT+=m.total; sI+=m.i; Object.keys(m.incMap).forEach(function(k){ var gg=tGen(k); g[gg]=(g[gg]||0)+m.incMap[k]; }); }); var improds={}; Object.keys(g).forEach(function(k){ improds[k]=g[k]/n; }); return { n:n, avgP:sP/n, avgTotal:sT/n, avgI:sI/n, improds:improds }; }",
+"    function _promCfg(){ var P=_promSinK(); if(!P) return null; var arr=Object.keys(P.improds).map(function(k){return {tipo:k,valor:P.improds[k]};}).sort(function(x,y){return y.valor-x.valor;}); var techo=P.avgTotal, labels=['Tiempo total (medio)'], data=[[0,techo]], colors=['#6366f1'], borders=['#1d4ed8'], bw=[1], acum=0; arr.forEach(function(it){ var b=techo-acum-it.valor, t=techo-acum; labels.push(it.tipo); data.push([b,t]); colors.push(_col(it.tipo)); borders.push('rgba(0,0,0,0.3)'); bw.push(1); acum+=it.valor; }); labels.push('Productivo (medio)'); data.push([0,P.avgP]); colors.push('#10b981'); borders.push('#047857'); bw.push(2); return { P:P, cfg:{ type:'bar', data:{labels:labels,datasets:[{label:'Minutos (medios)',data:data,backgroundColor:colors,borderColor:borders,borderWidth:bw,borderSkipped:false}]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, title:{display:true,text:'Cascada PROMEDIO (sin K) · por tipología general', font:{size:13,weight:'bold'}}}, scales:{x:{ticks:{font:{size:10},maxRotation:60,minRotation:30}},y:{beginAtZero:true,title:{display:true,text:'Minutos'}}} } } }; }",
+"    window.abrirPromedioGeneral=function(){ var cc=_promCfg(); if(!cc){ alert('No hay datos para los filtros seleccionados.'); return; } var P=cc.P; var sub=document.getElementById('promedio-subtitle'); if(sub){ var pct=P.avgTotal>0?((P.avgP/P.avgTotal)*100).toFixed(1):'0.0'; sub.innerHTML='<strong>'+P.n+'</strong> auditoría(s) · (sin K) · Productivo medio: <strong>'+_fmt(P.avgP)+'</strong> ('+pct+'%) · Improductivo medio: <strong>'+_fmt(P.avgI)+'</strong>'; } var pc=document.getElementById('promedio-pie-container'); if(pc) pc.innerHTML=''; var modal=document.getElementById('modal-promedio'); if(modal){ modal.classList.remove('hidden'); modal.classList.add('flex'); } if(window._chartPromedio){ try{window._chartPromedio.destroy();}catch(e){} } window._chartPromedio=new Chart(document.getElementById('chart-promedio').getContext('2d'), cc.cfg); };",
+"    window._promedioGeneralConfigForPdf=function(){ var cc=_promCfg(); return cc?cc.cfg:null; };",
+"    var HKEY='pres_hidden_'+((window.SNAPSHOT&&SNAPSHOT.rangeIni)||'')+'_'+((window.SNAPSHOT&&SNAPSHOT.rangeFin)||'');",
+"    function hk(a){ return a && (a.id || ((a.fecha||'')+'|'+(a.site||'')+'|'+(a.supervisor||''))); }",
+"    function loadH(){ try{ return JSON.parse(localStorage.getItem(HKEY)||'[]'); }catch(e){ return []; } }",
+"    function saveH(x){ try{ localStorage.setItem(HKEY, JSON.stringify(x)); }catch(e){} }",
+"    var hidden=loadH();",
+"    if (typeof filterAudit==='function' && !window.__hideWrapped){ window.__hideWrapped=true; var _of=filterAudit; window.filterAudit=function(a,f){ if(a && hidden.indexOf(hk(a))!==-1) return null; return _of(a,f); }; }",
+"    function updBtn(){ var b=document.getElementById('btn-mostrar-ocultos'); if(!b){ b=document.createElement('button'); b.id='btn-mostrar-ocultos'; b.type='button'; b.style.cssText='position:fixed;bottom:12px;left:12px;z-index:9999;background:#6366f1;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);'; b.onclick=function(){ hidden=[]; saveH(hidden); if(typeof render==='function') render(); updBtn(); }; document.body.appendChild(b); } if(hidden.length){ b.style.display=''; b.textContent='Mostrar '+hidden.length+' punto(s) oculto(s)'; } else { b.style.display='none'; } }",
+"    var canv=document.getElementById('chart-tendencia'); if(canv && !canv.__hideHooked){ canv.__hideHooked=true; canv.addEventListener('contextmenu', function(ev){ ev.preventDefault(); if(!window.chartTend) return; var pts=window.chartTend.getElementsAtEventForMode(ev,'nearest',{intersect:true},true); if(!pts||!pts.length) return; var a=currentAuditsView[pts[0].index]; if(!a) return; var k=hk(a); if(hidden.indexOf(k)===-1){ hidden.push(k); saveH(hidden); if(typeof render==='function') render(); updBtn(); } }); }",
+"    if(typeof render==='function') render();",
+"    updBtn();",
+"  }catch(e){ console.error('[override presentación]', e); } }",
+"  if(document.readyState==='complete'){ setTimeout(apply,80); } else { window.addEventListener('load', function(){ setTimeout(apply,80); }); }",
+"})();"
+].join('\n') + '<\/scr' + 'ipt>';
+
+    (function(){
+        var _basePresBuild = window.__buildPresentacionHTML;
+        window.__buildPresentacionHTML = function(snap){
+            var html = _basePresBuild.apply(this, arguments);
+            try { html = html.replace('</body>', PRES_OVERRIDE_SCRIPT + '\n</body>'); }
+            catch(e){ console.error('inyección override presentación:', e); }
+            return html;
+        };
+    })();
+
+    // ===========================================================
     // TEMPLATE DEL HTML AUTOCONTENIDO
     // ===========================================================
     // El template contiene tags de cierre de script que romperian el script padre
@@ -7897,15 +8173,10 @@ ${texTablaExcesos}
                 try {
                     var d = JSON.parse(ex.target.result);
 
-                    // Caso A: trae appData completo (con audits) → reemplaza todo
+                    // Caso A: trae appData completo (con audits) → preguntar incorporar/reemplazar
                     if (d && Array.isArray(d.audits)) {
-                        appData = d;
-                        if (typeof renderDataTable === 'function') renderDataTable();
-                        if (typeof renderConfigFields === 'function') renderConfigFields();
-                        if (typeof aplicarListasADesplegables === 'function') aplicarListasADesplegables();
-                        try { refreshAllMaxLabels(); } catch(_) {}
-                        try { refreshAllRowStates(); } catch(_) {}
-                        showToast("Importado con éxito (datos + configuración)", "success");
+                        if (typeof window.incorporarDatos === 'function') { window.incorporarDatos(d); }
+                        else { appData = d; if (typeof renderDataTable === 'function') renderDataTable(); if (typeof renderConfigFields === 'function') renderConfigFields(); if (typeof aplicarListasADesplegables === 'function') aplicarListasADesplegables(); showToast("Importado con éxito", "success"); }
                         return;
                     }
 
@@ -8665,12 +8936,10 @@ function v74_installTendenciasK(){
       var selCat = document.getElementById('filter-global-categoria');
       if (selCat && typeof INC_JERARQUIA !== 'undefined') {
         INC_JERARQUIA.forEach(function(cat){
-          (cat.subs || []).forEach(function(sub){
-            var opt = document.createElement('option');
-            opt.value = sub.sub || sub;
-            opt.text = sub.sub || sub;
-            selCat.appendChild(opt);
-          });
+          var opt = document.createElement('option');
+          opt.value = cat.cat;
+          opt.text = cat.cat;
+          selCat.appendChild(opt);
         });
       }
     }
@@ -8774,14 +9043,21 @@ function v74_installTendenciasK(){
     if (c2 && typeof Chart !== 'undefined'){
       if (window.chartG2) window.chartG2.destroy();
 
-      // Determinar la categoría a mostrar según el filtro seleccionado
+      // Reagrupar incidencias por TIPOLOGÍA PRINCIPAL (nivel 1) para este gráfico.
+      var incMapsL1 = incMaps.map(function(im){
+        var o = {};
+        Object.keys(im || {}).forEach(function(k){ var g = (typeof tipoToGeneral === 'function' ? tipoToGeneral(k) : k); o[g] = (o[g] || 0) + (im[k] || 0); });
+        return o;
+      });
+
+      // Determinar la tipología principal a mostrar según el filtro seleccionado
       var targetCat = null;
       if (fCat !== 'all') {
         targetCat = fCat;
       } else {
         // Si "Todas", mostrar el top automático (mayor tiempo acumulado)
         var totalPorCat = {};
-        incMaps.forEach(function(im){
+        incMapsL1.forEach(function(im){
           Object.keys(im || {}).forEach(function(cat){
             totalPorCat[cat] = (totalPorCat[cat] || 0) + (im[cat] || 0);
           });
@@ -8792,7 +9068,7 @@ function v74_installTendenciasK(){
         });
       }
 
-      var serieCat = incMaps.map(function(im){ return (im && im[targetCat]) ? im[targetCat] : 0; });
+      var serieCat = incMapsL1.map(function(im){ return (im && im[targetCat]) ? im[targetCat] : 0; });
       var trendCat = trendLine(serieCat);
       var tituloCat = targetCat
         ? ('EVOLUCIÓN DE INCIDENCIAS · ' + targetCat + ' (min por auditoría)')
@@ -10201,11 +10477,14 @@ console.log('%c[V79] Patcher V79 cargado','background:#0369a1;color:#fff;font-we
    TASK 3 — Plantas específicas del SITE "QUÍMICA"
    ------------------------------------------------------------------ */
 var QUIMICA_PLANTAS = ["AF","IPA","A1L1","PRU-AMS","COG-SER","FRA1","A1L2","CUM1","FRA2","A1L3","CUM2"];
+var PESR_PLANTAS = ["SR-03","SR-05","SR-06","SR-07","SR-071","SR-10"];
+// Mapa data-driven Site -> plantas específicas. Si el site no está aquí, se usa la lista general de config.
+var SITE_PLANTAS = { 'QUÍMICA': QUIMICA_PLANTAS, 'PESR': PESR_PLANTAS };
 
 function v79_desiredPlantas(){
   var siteEl = document.getElementById('site');
   var site = siteEl ? (siteEl.value || '') : '';
-  if (site === 'QUÍMICA') return QUIMICA_PLANTAS.slice();
+  if (SITE_PLANTAS[site]) return SITE_PLANTAS[site].slice();
   try { return (appData.config.lists.plantas || []).slice(); } catch(e){ return []; }
 }
 // Expuesto para que las plantillas de <select> de planta generen ya las opciones
